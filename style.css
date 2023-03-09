@@ -1,12 +1,54 @@
+@font-face {
+  font-family: 'SourceCodePro-Regular';
+  src: url('./Files/SourceCodePro-Regular.ttf') format('truetype');
+}
+
 body {
+  background-color: rgb(15, 15, 15);
+  color: #ffffff;
+  font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
+  overflow: hidden;
   width: var(--vvw);
   height: var(--vvh);
 }
 
-#login {
-  display: block;
+#login, #game {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+#login h1 {
+  font-size: calc(var(--vvw) / 20);
+}
+#login label, #login input, #login button {
+  font-size: calc(var(--vvw) / 70);
+  width: 100%;
+  box-sizing: border-box;
+}
+#login h1, #login label {
+  margin: 0;
+}
+#login form {
+  display: block;
+  justify-content: center;
+  align-items: center;
+}
+#login label {
+  align-items: flex-end;
+}
+
+#game, #login h1 {
+  text-align: center;
+}
+#game p {
+  margin: 0;
+  white-space: nowrap;
+}
+#term {
+  font-size: calc(var(--vvw) / 25);
+}
+#def {
+  font-size: calc(var(--vvw) / 15);
 }
