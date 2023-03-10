@@ -68,7 +68,7 @@ const getWords = (username) => {
     const urlValue = urlInput.value;
     localStorage.setItem('quizlet', urlValue);
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `${address}/start?url=${urlValue}`);
+    xhr.open('GET', `${address}/get/quizlet?url=${urlValue}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function() {
         if (xhr.status === 200) {

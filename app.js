@@ -8,16 +8,6 @@ const bcrypt = require('bcrypt');
 const app = express();
 const port = process.env.PORT;
 const address = process.env.ADDRESS;
-const timeNow = new Date().toLocaleString('ja-JP', {
-    timeZone: 'Pacific/Auckland',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-}).replace(/\//g, '-');
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -39,7 +29,7 @@ app.post('/login', async (req, res) => {
         id INTEGER PRIMARY KEY,
         username TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
-        created_on TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
+        time TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
       )
     `);
     });
@@ -71,7 +61,17 @@ async function validateCredentials(db, user, username, password) {
     console.log(password);
     if (!user) {
         const hashedPassword = await bcrypt.hash(password, 10);
-        db.run(`INSERT OR IGNORE INTO users (username, password, created_on) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
+        const timeNow = new Date().toLocaleString('ja-JP', {
+            timeZone: 'Pacific/Auckland',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).replace(/\//g, '-');
+        db.run(`INSERT OR IGNORE INTO users (username, password, time) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
         console.log("Created new account.");
     } else {
         const isMatch = await bcrypt.compare(password, user.password);
@@ -82,7 +82,7 @@ async function validateCredentials(db, user, username, password) {
 }
 
 
-app.get('/start', async (req, res) => {
+app.get('/get/quizlet', async (req, res) => {
     const allowed_domains = [
         'quizlet.com',
     ];
@@ -139,7 +139,16 @@ app.post('/submitTyped', (req, res) => {
             const {id} = row;
             db.serialize(() => {
                 db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER, def TEXT, term TEXT, time TEXT)');
-
+                const timeNow = new Date().toLocaleString('ja-JP', {
+                    timeZone: 'Pacific/Auckland',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '-');
                 db.run('INSERT INTO history (id, def, term, time) VALUES (?, ?, ?, ?)', [id, def, term, timeNow], (err) => {
                     if (err) {
                         console.error(err);
