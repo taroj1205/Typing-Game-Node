@@ -13,6 +13,10 @@ typingInput = document.getElementById("typingInput");
 window.onload = () => {
     loginSection.style.display = 'block';
     gameSection.style.display = 'none';
+
+    urlInput.value = localStorage.getItem('quizlet') || '';
+    usernameInput.value = localStorage.getItem('username') || '';
+    passwordInput.value = localStorage.getItem('password') || '';
 }
 
 const setVisualViewport = () => {
@@ -28,6 +32,8 @@ const login = () => {
     submitButton.disabled = true;
     const username = usernameInput.value;
     const password = passwordInput.value;
+    localStorage.setItem('username', username);
+    localStorage.setItem('password', password);
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${address}/login`);
     xhr.onload = function() {
@@ -60,6 +66,7 @@ const login = () => {
 
 const getWords = (username) => {
     const urlValue = urlInput.value;
+    localStorage.setItem('quizlet', urlValue);
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/start?url=${urlValue}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
