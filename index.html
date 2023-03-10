@@ -15,24 +15,25 @@
           <label for="url">Quizlet:</label>
           <input type="text" id="url" placeholder="https://quizlet.com" required autofocus>
         </div>
-        <!--
         <div>
           <label for="username">Username:</label>
-          <input type="username" id="username" placeholder="ユーザー名">
+          <input type="username" id="username" placeholder="ユーザー名" required>
         </div>
         <div>
           <label for="password">Password:</label>
-          <input type="password" id="password" placeholder="パスワード">
+          <input type="password" id="password" placeholder="パスワード" required>
         </div>
-        -->
         <div>
-          <button type="submit" id="submit">Login</button>
+          <button type="submit" id="submit">Login/Signup</button>
         </div>
       </form>
     </section>
     <section id="game" style="display: none;">
-      <p id="term"></p>
-      <p id="def"></p>
+      <div id="termAndDef">
+        <p id="term"></p>
+        <p id="def"></p>
+      </div>
+      <div id="history"></div>
     </section>
     <section id="hidden">
       <input type="password" onblur="this.focus()"  id="typingInput" style="opacity: 0; position: absolute; left: -9999px; top: 0; display: none;" autofocus autocomplete="off">
