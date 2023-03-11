@@ -7,13 +7,18 @@ termText = document.getElementById("term");
 defText = document.getElementById("def");
 loginSection = document.getElementById("login");
 gameSection = document.getElementById("game");
+statsSection = document.getElementById("stats");
 titleHTML = document.querySelector("title")
 typingInput = document.getElementById("typingInput");
+historyDIV = document.getElementById("history");
+menuToggle = document.getElementById("menuToggle");
+historyMenu = document.getElementById("historyMenu");
+gameTitle = document.getElementById("title");
 
 window.onload = () => {
     loginSection.style.display = 'block';
     gameSection.style.display = 'none';
-
+    statsSection.style.display = 'none';
     urlInput.value = localStorage.getItem('quizlet') || '';
     usernameInput.value = localStorage.getItem('username') || '';
     passwordInput.value = localStorage.getItem('password') || '';
@@ -27,6 +32,16 @@ const setVisualViewport = () => {
 }
 setVisualViewport()
 window.visualViewport.addEventListener('resize', setVisualViewport)
+
+const start = (username, response) => {
+    loginSection.style.display = 'none';
+    gameSection.style.display = 'block';
+    statsSection.style.display = 'block';
+    typingInput.style.display = 'block';
+    gameTitle.textContent = response.title;
+    newWord(username, response);
+    receiveTyped(username);
+}
 
 const login = () => {
     submitButton.disabled = true;
@@ -74,7 +89,7 @@ const getWords = (username) => {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
-            newWord(username, response);
+            start(username, response);
             submitButton.disabled = false;
         } else if (xhr.status === 400) {
             console.error(xhr.statusText);
@@ -106,10 +121,7 @@ const newWord = (username, response) => {
     const def = response.def[randomIndex];
     termText.textContent = term;
     defText.textContent = def;
-    loginSection.style.display = 'none';
-    gameSection.style.display = 'block';
-    titleHTML.textContent += ` - ${term}: ${def}`;
-    typingInput.style.display = 'block';
+    titleHTML.textContent += ' - ' + response.title;
     typingInput.focus();
     typing(num, def, term, username, response);
 }
@@ -141,6 +153,7 @@ const submitTyped = (def, term, username) => {
     xhr.onload = function() {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
+            addHistoryDisplay(term, def);
             console.log(response);
         } else {
             console.error(xhr.statusText);
@@ -157,9 +170,66 @@ const submitTyped = (def, term, username) => {
     xhr.send(JSON.stringify(data));
 }
 
+const receiveTyped = (username) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `${address}/get/history?username=${username}`);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            console.log(response);
+            displayHistory(response);
+        } else {
+            console.error(xhr.statusText);
+            console.error('Request failed.');
+            return;
+        }
+    };
+    xhr.onerror = function() {
+        console.error(xhr.statusText);
+        console.error('Request failed.');
+    };
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    const data = { username };
+    xhr.send(JSON.stringify(data));
+}
+
+const displayHistory = (response) => {
+    const history = response.history;
+    let historyHTML = '<table>';
+    for (let i = 0; i < history.length; i++) {
+        const term = history[i].term;
+        const def = history[i].def;
+        historyHTML += `<tr><td>${def}:</td><td>${term}</td></tr>`;
+    }
+    historyHTML += '</table>';
+    historyDIV.innerHTML = historyHTML;
+}
+
+const addHistoryDisplay = (term, def) => {
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
+    historyDIV.querySelector('table').insertAdjacentElement('afterbegin', newRow);
+}
+
 document.addEventListener("keypress", function(event) {
     typingInput.focus();
     typingInput.value += event.key;
     const inputEvent = new InputEvent('input', {bubbles: true});
     typingInput.dispatchEvent(inputEvent);
+})
+
+menuToggle.addEventListener("click", function() {
+    historyMenu.style.display = (historyMenu.style.display === "inline-block") ? "none" : "inline-block";
+    typingInput.style.display = (typingInput.style.display === "block") ? "none" : "block";
+    gameSection.style.display = (gameSection.style.display === "block") ? "none" : "block";
+    if (typingInput.style.display === "block")
+    {
+        typingInput.focus();
+        console.log("Focus changed!");
+    }
+    if (menuToggle.textContent === "\u2630") {
+        menuToggle.textContent = "\u2716";
+    } else {
+        menuToggle.textContent = "\u2630";
+    }
 });

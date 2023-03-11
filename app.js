@@ -93,6 +93,7 @@ app.get('/get/quizlet', async (req, res) => {
         const page = await browser.newPage();
         await page.goto(req.query.url);
         const list = await page.$$eval('.TermText', terms => terms.map(term => term.textContent));
+        const title = await page.$eval('.SetPage-titleWrapper h1', h1 => h1.textContent);
 
         let term = [];
         let def = [];
@@ -101,7 +102,7 @@ app.get('/get/quizlet', async (req, res) => {
             def.push(list[i + 1]);
         }
         await browser.close();
-        res.json({term, def});
+        res.json({term, def, title});
     } else {
         res.status(400).send('Error: URL not allowed');
     }
@@ -157,6 +158,40 @@ app.post('/submitTyped', (req, res) => {
                     }
 
                     res.status(200).json({ message: 'Success' });
+                });
+            });
+        });
+    });
+});
+
+app.get('/get/history', (req, res) => {
+    const { username } = req.query;
+    const dataPath = path.join(__dirname, 'data');
+    checkAndCreateDir(dataPath);
+    const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
+    db.serialize(() => {
+        db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
+            if (err) {
+                console.error(err);
+                res.status(500).send('Internal Server Error');
+                return;
+            }
+
+            if (!row) {
+                res.status(400).send('User not found');
+                return;
+            }
+
+            const {id} = row;
+            db.serialize(() => {
+                db.all('SELECT * FROM history WHERE id = ?', [id], (err, rows) => {
+                    if (err) {
+                        console.error(err);
+                        res.status(500).send('Internal Server Error');
+                        return;
+                    }
+
+                    res.status(200).json({ history: rows });
                 });
             });
         });

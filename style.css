@@ -52,3 +52,55 @@ body {
 #def {
   font-size: calc(var(--vvw) / 15);
 }
+
+#history {
+  position: absolute;
+  white-space: nowrap;
+  overflow: auto !important;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+#history table {
+  table-layout: fixed;
+  width: var(--vvw);
+}
+
+#history td:first-child {
+  text-align: right;
+}
+
+#history td:nth-child(2) {
+  text-align: left;
+}
+#historyMenu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 99999;
+  background-color: #262626;
+  display: none;
+}
+#menuToggle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 1rem;
+  font-size: 2rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 100000;
+  color: #ffffff;
+}
+
+#history, #title {
+  font-size: 1.5rem;
+}
+
+#title {
+  text-align: right;
+  margin: 1.5rem 1rem;
+}
