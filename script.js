@@ -40,7 +40,7 @@ const start = (username, response) => {
     typingInput.style.display = 'block';
     gameTitle.textContent = response.title;
     newWord(username, response);
-    receiveTyped(username);
+    receiveTyped(username, response);
 }
 
 const login = () => {
@@ -136,7 +136,7 @@ const typing = (num, def, term, username, response) => {
             const notYet = "<span style='color: #1fd755;' id='notYet'>" + def.substring(num) + "</span>";
             document.querySelector("#def").innerHTML = typedOut + notYet;
             if (num >= def.length) {
-                submitTyped(def, term, username);
+                submitTyped(def, term, username, response);
                 newWord(username, response);
             }
         } else {
@@ -147,9 +147,9 @@ const typing = (num, def, term, username, response) => {
     });
 }
 
-const submitTyped = (def, term, username) => {
+const submitTyped = (def, term, username, response) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${address}/submitTyped`);
+    xhr.open('POST', `${address}/post/typed`);
     xhr.onload = function() {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
@@ -166,13 +166,14 @@ const submitTyped = (def, term, username) => {
         console.error('Request failed.');
     };
     xhr.setRequestHeader('Content-Type', 'application/json');
-    const data = { term, def, username };
+    let quizlet_id = response.quizlet_id;
+    const data = { term, def, username, quizlet_id };
     xhr.send(JSON.stringify(data));
 }
 
-const receiveTyped = (username) => {
+const receiveTyped = (username, response) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `${address}/get/history?username=${username}`);
+    xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
     xhr.onload = function() {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
@@ -189,26 +190,25 @@ const receiveTyped = (username) => {
         console.error('Request failed.');
     };
     xhr.setRequestHeader('Content-Type', 'application/json');
-    const data = { username };
-    xhr.send(JSON.stringify(data));
+    xhr.send();
 }
 
 const displayHistory = (response) => {
     const history = response.history;
-    let historyHTML = '<table>';
+    let historyHTML = '<table><tbody>';
     for (let i = 0; i < history.length; i++) {
         const term = history[i].term;
         const def = history[i].def;
         historyHTML += `<tr><td>${def}:</td><td>${term}</td></tr>`;
     }
-    historyHTML += '</table>';
+    historyHTML += '</tbody></table>';
     historyDIV.innerHTML = historyHTML;
 }
 
 const addHistoryDisplay = (term, def) => {
     const newRow = document.createElement('tr');
     newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
-    historyDIV.querySelector('table').insertAdjacentElement('afterbegin', newRow);
+    historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
 }
 
 document.addEventListener("keypress", function(event) {

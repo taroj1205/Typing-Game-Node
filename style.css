@@ -7,9 +7,9 @@ body {
   background-color: rgb(15, 15, 15);
   color: #ffffff;
   font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
-  overflow: hidden;
   width: var(--vvw);
   height: var(--vvh);
+  overflow: hidden;
 }
 
 #login, #game {
@@ -56,14 +56,20 @@ body {
 #history {
   position: absolute;
   white-space: nowrap;
-  overflow: auto !important;
   top: 0;
   left: 0;
   right: 0;
+  height: var(--vvh);
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
 }
 #history table {
   table-layout: fixed;
   width: var(--vvw);
+}
+
+#history td {
+  overflow-x: auto !important;
 }
 
 #history td:first-child {
@@ -84,7 +90,7 @@ body {
   display: none;
 }
 #menuToggle {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   margin: 1rem;

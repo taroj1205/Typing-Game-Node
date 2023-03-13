@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const puppeteer = require('puppeteer');
+const userAgent = require('user-agents');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
@@ -29,7 +30,7 @@ app.post('/login', async (req, res) => {
         id INTEGER PRIMARY KEY,
         username TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
-        time TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
+        account_creation_time TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
       )
     `);
     });
@@ -71,29 +72,40 @@ async function validateCredentials(db, user, username, password) {
             second: '2-digit',
             hour12: false
         }).replace(/\//g, '-');
-        db.run(`INSERT OR IGNORE INTO users (username, password, time) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
+        db.run(`INSERT OR IGNORE INTO users (username, password, account_creation_time) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
         console.log("Created new account.");
     } else {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            await sleep(5000);
             throw new Error('Incorrect password.');
         }
     }
 }
 
+// create global browser instance
+let browser;
+
+// initialize global browser instance
+(async () => {
+    browser = await puppeteer.launch({
+        userDataDir: path.join(__dirname, 'userData')
+    });
+})();
 
 app.get('/get/quizlet', async (req, res) => {
     const allowed_domains = [
         'quizlet.com',
     ];
-    if (req.query.url.includes(allowed_domains)) {
-        const browser = await puppeteer.launch({
-            userDataDir: path.join(__dirname, 'userData')
-        });
+    const quizlet_id_match = req.query.url.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+    const quizlet_id = quizlet_id_match[1];
+    const url = `https://quizlet.com/${quizlet_id}`;
+    if (url.includes(allowed_domains)) {
         const page = await browser.newPage();
-        await page.goto(req.query.url);
+        await page.setUserAgent(userAgent.random().toString());
+        await page.goto(url);
         const list = await page.$$eval('.TermText', terms => terms.map(term => term.textContent));
-        const title = await page.$eval('.SetPage-titleWrapper h1', h1 => h1.textContent);
+        const title = (await page.title()).replace(' | Quizlet', '');
 
         let term = [];
         let def = [];
@@ -101,11 +113,16 @@ app.get('/get/quizlet', async (req, res) => {
             term.push(list[i]);
             def.push(list[i + 1]);
         }
-        await browser.close();
-        res.json({term, def, title});
+        await page.close();
+        res.json({term, def, title, quizlet_id});
     } else {
         res.status(400).send('Error: URL not allowed');
     }
+});
+
+// close global browser instance when application exits
+process.on('exit', () => {
+    browser.close();
 });
 
 function checkAndCreateDir(dataPath) {
@@ -119,8 +136,8 @@ function checkAndCreateDir(dataPath) {
     }
 }
 
-app.post('/submitTyped', (req, res) => {
-    const { def, term, username } = req.body;
+app.post('/post/typed', (req, res) => {
+    const { def, term, username, quizlet_id } = req.body;
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
     const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
@@ -139,7 +156,7 @@ app.post('/submitTyped', (req, res) => {
 
             const {id} = row;
             db.serialize(() => {
-                db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER, def TEXT, term TEXT, time TEXT)');
+                db.run('CREATE TABLE IF NOT EXISTS history (user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, time TEXT)');
                 const timeNow = new Date().toLocaleString('ja-JP', {
                     timeZone: 'Pacific/Auckland',
                     year: 'numeric',
@@ -150,7 +167,7 @@ app.post('/submitTyped', (req, res) => {
                     second: '2-digit',
                     hour12: false
                 }).replace(/\//g, '-');
-                db.run('INSERT INTO history (id, def, term, time) VALUES (?, ?, ?, ?)', [id, def, term, timeNow], (err) => {
+                db.run('INSERT INTO history (user_id, quizlet_id, def, term, time) VALUES (?, ?, ?, ?, ?)', [id, quizlet_id, def, term, timeNow], (err) => {
                     if (err) {
                         console.error(err);
                         res.status(500).send('Internal Server Error');
@@ -165,10 +182,12 @@ app.post('/submitTyped', (req, res) => {
 });
 
 app.get('/get/history', (req, res) => {
-    const { username } = req.query;
+    const { username, quizlet_id } = req.query;
+    console.log(username, quizlet_id);
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
     const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
+    db.run('CREATE TABLE IF NOT EXISTS history (user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, time TEXT)');
     db.serialize(() => {
         db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
             if (err) {
@@ -182,9 +201,9 @@ app.get('/get/history', (req, res) => {
                 return;
             }
 
-            const {id} = row;
+            const { id } = row;
             db.serialize(() => {
-                db.all('SELECT * FROM history WHERE id = ?', [id], (err, rows) => {
+                db.all('SELECT * FROM history WHERE user_id = ? AND quizlet_id = ?', [id, quizlet_id], (err, rows) => {
                     if (err) {
                         console.error(err);
                         res.status(500).send('Internal Server Error');
@@ -197,6 +216,12 @@ app.get('/get/history', (req, res) => {
         });
     });
 });
+
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
 
 const server = app.listen(port, () => {
     console.log(`Server listening on ${address}:${port}`);
