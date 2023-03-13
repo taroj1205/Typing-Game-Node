@@ -30,7 +30,8 @@ app.post('/login', async (req, res) => {
         id INTEGER PRIMARY KEY,
         username TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
-        account_creation_time TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime')),
+        last_login_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
       )
     `);
     });
@@ -72,13 +73,26 @@ async function validateCredentials(db, user, username, password) {
             second: '2-digit',
             hour12: false
         }).replace(/\//g, '-');
-        db.run(`INSERT OR IGNORE INTO users (username, password, account_creation_time) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
+        db.run(`INSERT OR IGNORE INTO users (username, password, created_at) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
         console.log("Created new account.");
     } else {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             await sleep(5000);
             throw new Error('Incorrect password.');
+        } else {
+            const timeNow = new Date().toLocaleString('ja-JP', {
+                timeZone: 'Pacific/Auckland',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(/\//g, '-');
+            db.run(`UPDATE users SET last_login_at = ? WHERE username = ?`, [timeNow, username]);
+            console.log("Updated last login time.");
         }
     }
 }
@@ -156,7 +170,7 @@ app.post('/post/typed', (req, res) => {
 
             const {id} = row;
             db.serialize(() => {
-                db.run('CREATE TABLE IF NOT EXISTS history (user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, time TEXT)');
+                db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, created_at TEXT)');
                 const timeNow = new Date().toLocaleString('ja-JP', {
                     timeZone: 'Pacific/Auckland',
                     year: 'numeric',
@@ -167,7 +181,7 @@ app.post('/post/typed', (req, res) => {
                     second: '2-digit',
                     hour12: false
                 }).replace(/\//g, '-');
-                db.run('INSERT INTO history (user_id, quizlet_id, def, term, time) VALUES (?, ?, ?, ?, ?)', [id, quizlet_id, def, term, timeNow], (err) => {
+                db.run('INSERT INTO history (user_id, quizlet_id, def, term, created_at) VALUES (?, ?, ?, ?, ?)', [id, quizlet_id, def, term, timeNow], (err) => {
                     if (err) {
                         console.error(err);
                         res.status(500).send('Internal Server Error');
@@ -187,7 +201,7 @@ app.get('/get/history', (req, res) => {
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
     const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
-    db.run('CREATE TABLE IF NOT EXISTS history (user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, time TEXT)');
+    db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, created_at TEXT)');
     db.serialize(() => {
         db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
             if (err) {
