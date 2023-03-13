@@ -124,6 +124,9 @@ const newWord = (username, response) => {
     defText.textContent = def;
     titleHTML.textContent += ' - ' + response.title;
     typingInput.focus();
+    furigana(term, (term) => {
+        termText.innerHTML = term;
+    });
     typing(num, def, term, username, response);
 }
 
@@ -196,27 +199,68 @@ const receiveTyped = (username, response) => {
 
 const displayHistory = (response) => {
     const history = response.history;
+    let promises = [];
     let historyHTML = '<table><tbody>';
+
     for (let i = 0; i < history.length; i++) {
         const term = history[i].term;
         const def = history[i].def;
-        historyHTML += `<tr><td>${def}:</td><td>${term}</td></tr>`;
+        const promise = new Promise((resolve, reject) => {
+            furigana(term, (term) => {
+                resolve(`<tr><td>${def}:</td><td>${term}</td></tr>`);
+            });
+        });
+        promises.push(promise);
     }
-    historyHTML += '</tbody></table>';
-    historyDIV.innerHTML = historyHTML;
-    addWordCountDisplay();
+
+    Promise.all(promises).then((results) => {
+        historyHTML += results.join('');
+        historyHTML += '</tbody></table>';
+        historyDIV.innerHTML = historyHTML;
+        addWordCountDisplay();
+    }).catch((error) => {
+        console.error(error);
+        historyHTML += '</tbody></table>';
+        historyDIV.innerHTML = historyHTML;
+        addWordCountDisplay();
+    });
 }
 
 const addHistoryDisplay = (term, def) => {
     const newRow = document.createElement('tr');
-    newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
-    historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
+    furigana(term, (term) => {
+        newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
+        historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
+    });
     addWordCountDisplay();
 }
 
 const addWordCountDisplay = () => {
     historyTBODY = historyDIV.querySelector('tbody');
     wordCountText.innerHTML = `Words: ${historyTBODY.rows.length}`;
+}
+
+const furigana = (term, callback) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `${address}/get/furigana?term=${term}`);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            console.log(response.furigana);
+            callback(response.furigana);
+        } else {
+            console.error(xhr.statusText);
+            console.error('Request failed.');
+            callback(response.furigana);
+        }
+    };
+    xhr.onerror = function() {
+        console.error(xhr.statusText);
+        console.error('Request failed.');
+        termText.textContent = term;
+    };
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send();
 }
 
 document.addEventListener("keypress", function(event) {

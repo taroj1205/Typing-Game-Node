@@ -10,6 +10,11 @@ const app = express();
 const port = process.env.PORT;
 const address = process.env.ADDRESS;
 
+const Kuroshiro = require('kuroshiro').default;
+const KuromojiAnalyzer = require('kuroshiro-analyzer-kuromoji');
+const kuroshiro = new Kuroshiro();
+kuroshiro.init(new KuromojiAnalyzer());
+
 app.use(express.json());
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -229,6 +234,20 @@ app.get('/get/history', (req, res) => {
             });
         });
     });
+});
+
+app.get('/get/furigana', async (req, res) => {
+    const { term } = req.query;
+    // Check if the term has kanji
+    const result = Kuroshiro.Util.hasKanji(term);
+    if (result === true) {
+        const furigana = await kuroshiro.convert(term, {mode:"furigana", to:"hiragana"});
+        console.log(furigana);
+        res.json({ furigana });
+    }
+    else {
+        res.json({ furigana: term });
+    }
 });
 
 function sleep(ms) {
