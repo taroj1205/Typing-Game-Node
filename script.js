@@ -120,14 +120,15 @@ const newWord = (username, response) => {
     const randomIndex = Math.floor(Math.random() * (maxIndex + 1));
     const term = response.term[randomIndex];
     const def = response.def[randomIndex];
-    termText.textContent = term;
+    const lang = response.langCode;
+    furigana(term, lang);
     defText.textContent = def;
     titleHTML.textContent += ' - ' + response.title;
     typingInput.focus();
-    typing(num, def, term, username, response);
+    typing(num, def, term, lang, username, response);
 }
 
-const typing = (num, def, term, username, response) => {
+const typing = (num, def, term, lang, username, response) => {
     typingInput.addEventListener("input", function(event) {
         if (event.inputType === "insertText" && event.data === def[num])
         {
@@ -174,7 +175,7 @@ const submitTyped = (def, term, username, response) => {
 
 const receiveTyped = (username, response) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
+    xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}&lang=${response.langCode}`);
     xhr.onload = function() {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
@@ -217,6 +218,29 @@ const addHistoryDisplay = (term, def) => {
 const addWordCountDisplay = () => {
     historyTBODY = historyDIV.querySelector('tbody');
     wordCountText.innerHTML = `Words: ${historyTBODY.rows.length}`;
+}
+
+const furigana = (term, lang) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `${address}/get/furigana?term=${term}&lang=${lang}`);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            termText.innerHTML = response.furigana;
+            console.log(response.furigana);
+        } else {
+            console.error(xhr.statusText);
+            console.error('Request failed.');
+            return;
+        }
+    };
+    xhr.onerror = function() {
+        console.error(xhr.statusText);
+        console.error('Request failed.');
+        termText.textContent = term;
+    };
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send();
 }
 
 document.addEventListener("keypress", function(event) {
