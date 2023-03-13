@@ -120,15 +120,17 @@ const newWord = (username, response) => {
     const randomIndex = Math.floor(Math.random() * (maxIndex + 1));
     const term = response.term[randomIndex];
     const def = response.def[randomIndex];
-    const lang = response.langCode;
-    furigana(term, lang);
+    termText.textContent = term;
     defText.textContent = def;
     titleHTML.textContent += ' - ' + response.title;
     typingInput.focus();
-    typing(num, def, term, lang, username, response);
+    furigana(term, (term) => {
+        termText.innerHTML = term;
+    });
+    typing(num, def, term, username, response);
 }
 
-const typing = (num, def, term, lang, username, response) => {
+const typing = (num, def, term, username, response) => {
     typingInput.addEventListener("input", function(event) {
         if (event.inputType === "insertText" && event.data === def[num])
         {
@@ -175,7 +177,7 @@ const submitTyped = (def, term, username, response) => {
 
 const receiveTyped = (username, response) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}&lang=${response.langCode}`);
+    xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
     xhr.onload = function() {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
@@ -197,21 +199,39 @@ const receiveTyped = (username, response) => {
 
 const displayHistory = (response) => {
     const history = response.history;
+    let promises = [];
     let historyHTML = '<table><tbody>';
+
     for (let i = 0; i < history.length; i++) {
         const term = history[i].term;
         const def = history[i].def;
-        historyHTML += `<tr><td>${def}:</td><td>${term}</td></tr>`;
+        const promise = new Promise((resolve, reject) => {
+            furigana(term, (term) => {
+                resolve(`<tr><td>${def}:</td><td>${term}</td></tr>`);
+            });
+        });
+        promises.push(promise);
     }
-    historyHTML += '</tbody></table>';
-    historyDIV.innerHTML = historyHTML;
-    addWordCountDisplay();
+
+    Promise.all(promises).then((results) => {
+        historyHTML += results.join('');
+        historyHTML += '</tbody></table>';
+        historyDIV.innerHTML = historyHTML;
+        addWordCountDisplay();
+    }).catch((error) => {
+        console.error(error);
+        historyHTML += '</tbody></table>';
+        historyDIV.innerHTML = historyHTML;
+        addWordCountDisplay();
+    });
 }
 
 const addHistoryDisplay = (term, def) => {
     const newRow = document.createElement('tr');
-    newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
-    historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
+    furigana(term, (term) => {
+        newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
+        historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
+    });
     addWordCountDisplay();
 }
 
@@ -220,18 +240,18 @@ const addWordCountDisplay = () => {
     wordCountText.innerHTML = `Words: ${historyTBODY.rows.length}`;
 }
 
-const furigana = (term, lang) => {
+const furigana = (term, callback) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `${address}/get/furigana?term=${term}&lang=${lang}`);
+    xhr.open('GET', `${address}/get/furigana?term=${term}`);
     xhr.onload = function() {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
-            termText.innerHTML = response.furigana;
             console.log(response.furigana);
+            callback(response.furigana);
         } else {
             console.error(xhr.statusText);
             console.error('Request failed.');
-            return;
+            callback(response.furigana);
         }
     };
     xhr.onerror = function() {

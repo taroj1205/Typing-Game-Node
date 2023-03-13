@@ -123,8 +123,6 @@ app.get('/get/quizlet', async (req, res) => {
         const page = await browser.newPage();
         await page.setUserAgent(userAgent.random().toString());
         await page.goto(url);
-        const langClass = await page.$eval('.TermText', el => el.classList[2]);
-        const langCode = langClass.split('-')[1];
         const list = await page.$$eval('.TermText', terms => terms.map(term => term.textContent));
         const title = (await page.title()).replace(' | Quizlet', '');
 
@@ -135,7 +133,7 @@ app.get('/get/quizlet', async (req, res) => {
             def.push(list[i + 1]);
         }
         await page.close();
-        res.json({term, def, title, quizlet_id, langCode});
+        res.json({term, def, title, quizlet_id});
     } else {
         res.status(400).send('Error: URL not allowed');
     }
@@ -158,7 +156,7 @@ function checkAndCreateDir(dataPath) {
 }
 
 app.post('/post/typed', (req, res) => {
-    const { def, term, username, quizlet_id, langCode } = req.body;
+    const { def, term, username, quizlet_id } = req.body;
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
     const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
@@ -177,7 +175,7 @@ app.post('/post/typed', (req, res) => {
 
             const {id} = row;
             db.serialize(() => {
-                db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, lang TEXT, def TEXT, term TEXT, created_at TEXT)');
+                db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, created_at TEXT)');
                 const timeNow = new Date().toLocaleString('ja-JP', {
                     timeZone: 'Pacific/Auckland',
                     year: 'numeric',
@@ -188,7 +186,7 @@ app.post('/post/typed', (req, res) => {
                     second: '2-digit',
                     hour12: false
                 }).replace(/\//g, '-');
-                db.run('INSERT INTO history (user_id, quizlet_id, lang, def, term, created_at) VALUES (?, ?, ?, ?, ?, ?)', [id, quizlet_id, langCode, def, term, timeNow], (err) => {
+                db.run('INSERT INTO history (user_id, quizlet_id, def, term, created_at) VALUES (?, ?, ?, ?, ?)', [id, quizlet_id, def, term, timeNow], (err) => {
                     if (err) {
                         console.error(err);
                         res.status(500).send('Internal Server Error');
@@ -203,12 +201,12 @@ app.post('/post/typed', (req, res) => {
 });
 
 app.get('/get/history', (req, res) => {
-    const { username, quizlet_id, lang } = req.query;
-    console.log(username, quizlet_id, lang);
+    const { username, quizlet_id } = req.query;
+    console.log(username, quizlet_id);
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
     const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
-    db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, lang TEXT, def TEXT, term TEXT, created_at TEXT)');
+    db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, created_at TEXT)');
     db.serialize(() => {
         db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
             if (err) {
@@ -239,19 +237,16 @@ app.get('/get/history', (req, res) => {
 });
 
 app.get('/get/furigana', async (req, res) => {
-    const { term, lang } = req.query;
-    // Check if the langCode is 'ja'
-    if (lang === 'ja') {
-        try {
-            const furigana = await kuroshiro.convert(term, {mode:"furigana", to:"hiragana"});
-            console.log(furigana);
-            res.json({ furigana });
-        } catch (error) {
-            console.error(error);
-            res.status(500).send('Internal Server Error');
-        }
-    } else {
-        res.status(400).send('Error: Language not supported');
+    const { term } = req.query;
+    // Check if the term has kanji
+    const result = Kuroshiro.Util.hasKanji(term);
+    if (result === true) {
+        const furigana = await kuroshiro.convert(term, {mode:"furigana", to:"hiragana"});
+        console.log(furigana);
+        res.json({ furigana });
+    }
+    else {
+        res.json({ furigana: term });
     }
 });
 
