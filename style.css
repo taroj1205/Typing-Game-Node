@@ -52,6 +52,9 @@ body {
 #def {
   font-size: calc(var(--vvw) / 15);
 }
+#word_count {
+    font-size: calc(var(--vvw) / 60);
+}
 
 #history {
   position: absolute;

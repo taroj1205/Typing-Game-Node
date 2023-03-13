@@ -14,6 +14,7 @@ historyDIV = document.getElementById("history");
 menuToggle = document.getElementById("menuToggle");
 historyMenu = document.getElementById("historyMenu");
 gameTitle = document.getElementById("title");
+wordCountText = document.getElementById("word_count");
 
 window.onload = () => {
     loginSection.style.display = 'block';
@@ -203,12 +204,19 @@ const displayHistory = (response) => {
     }
     historyHTML += '</tbody></table>';
     historyDIV.innerHTML = historyHTML;
+    addWordCountDisplay();
 }
 
 const addHistoryDisplay = (term, def) => {
     const newRow = document.createElement('tr');
     newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
     historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
+    addWordCountDisplay();
+}
+
+const addWordCountDisplay = () => {
+    historyTBODY = historyDIV.querySelector('tbody');
+    wordCountText.innerHTML = `Words: ${historyTBODY.rows.length}`;
 }
 
 document.addEventListener("keypress", function(event) {
