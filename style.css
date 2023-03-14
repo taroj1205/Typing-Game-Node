@@ -97,7 +97,7 @@ body {
   top: 0;
   left: 0;
   margin: 1rem;
-  font-size: 2rem;
+  font-size: calc(var(--vvw) / 60);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -112,4 +112,14 @@ body {
 #title {
   text-align: right;
   margin: 1.5rem 1rem;
+  font-size: calc(var(--vvw) / 70);
+}
+
+#leaderboard a {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  color: #3b88f5;
+  text-decoration: none;
+  font-size: calc(var(--vvw) / 70);
 }

@@ -15,6 +15,7 @@ menuToggle = document.getElementById("menuToggle");
 historyMenu = document.getElementById("historyMenu");
 gameTitle = document.getElementById("title");
 wordCountText = document.getElementById("word_count");
+leaderboardText = document.getElementById("leaderboard");
 
 window.onload = () => {
     loginSection.style.display = 'block';
@@ -40,8 +41,10 @@ const start = (username, response) => {
     statsSection.style.display = 'block';
     typingInput.style.display = 'block';
     gameTitle.textContent = response.title;
+    quizlet_id = response.quizlet_id;
+    addLeaderboardLink(quizlet_id);
+    getHistory(username, response);
     newWord(username, response);
-    receiveTyped(username, response);
 }
 
 const login = () => {
@@ -175,7 +178,7 @@ const submitTyped = (def, term, username, response) => {
     xhr.send(JSON.stringify(data));
 }
 
-const receiveTyped = (username, response) => {
+const getHistory = (username, response) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
     xhr.onload = function() {
@@ -226,18 +229,26 @@ const displayHistory = (response) => {
     });
 }
 
+const addLeaderboardLink = (quizlet_id) => {
+    const link = document.createElement('a');
+    link.href = `${address}/rank/words?quizlet_id=${quizlet_id}`;
+    link.textContent = 'Go to leaderboard';
+    link.target = '_blank'; // Open link in a new tab
+    leaderboardText.appendChild(link);
+};
+
 const addHistoryDisplay = (term, def) => {
     const newRow = document.createElement('tr');
     furigana(term, (term) => {
         newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
         historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
+        addWordCountDisplay();
     });
-    addWordCountDisplay();
 }
 
 const addWordCountDisplay = () => {
-    historyTBODY = historyDIV.querySelector('tbody');
-    wordCountText.innerHTML = `Words: ${historyTBODY.rows.length}`;
+    const wordCount = historyDIV.querySelector('table tbody').rows.length;
+    wordCountText.innerHTML = `Words: ${wordCount}`;
 }
 
 const furigana = (term, callback) => {
