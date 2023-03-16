@@ -1,0 +1,15 @@
+@font-face {
+    font-family: 'SourceCodePro-Regular';
+    src: url('../Files/SourceCodePro-Regular.ttf') format('truetype');
+}
+
+body {
+    background-color: rgb(15, 15, 15);
+    color: #ffffff;
+    font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
+    width: var(--vvw);
+    height: var(--vvh);
+}
+h1 a {
+    color: #3b88f5;
+}

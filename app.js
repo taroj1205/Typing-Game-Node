@@ -10,7 +10,7 @@ const http = require('http');
 const app = express();
 const port = process.env.PORT;
 const address = process.env.IP_ADDRESS;
-
+const Chart = require('chart.js');
 const Kuroshiro = require('kuroshiro').default;
 const KuromojiAnalyzer = require('kuroshiro-analyzer-kuromoji');
 const kuroshiro = new Kuroshiro();
@@ -24,6 +24,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -175,7 +176,19 @@ app.get('/get/quizlet', async (req, res) => {
             def.push(list[i + 1]);
         }
         await page.close();
-        res.json({term, def, title, quizlet_id});
+
+        const dataPath = path.join(__dirname, 'data');
+        checkAndCreateDir(dataPath);
+        const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
+        await db.run('CREATE TABLE IF NOT EXISTS quizlet (id INTEGER PRIMARY KEY, quizlet_id TEXT, quizlet_title TEXT)');
+        db.run('INSERT INTO quizlet (quizlet_id, quizlet_title) VALUES (?, ?)', [quizlet_id, title], (err) => {
+            if (err) {
+                console.error(err.message);
+                res.status(500).send('Internal server error');
+            } else {
+                res.json({term, def, title, quizlet_id});
+            }
+        });
     } else {
         res.status(400).send('Error: URL not allowed');
     }
@@ -292,42 +305,69 @@ app.get('/get/furigana', async (req, res) => {
     }
 });
 
-// Define a route that returns the ranking of users based on word count
 app.get('/rank/words', (req, res) => {
     const quizlet_id = req.query.quizlet_id;
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
     const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
 
-    // Retrieve all history records with the given Quizlet ID
-    db.all('SELECT user_id, COUNT(*) AS word_count FROM history WHERE quizlet_id = ? GROUP BY user_id ORDER BY word_count DESC', [quizlet_id], (err, rows) => {
+    // Retrieve the title from the quizlet table
+    db.get('SELECT quizlet_title FROM quizlet WHERE quizlet_id = ?', [quizlet_id], (err, row) => {
         if (err) {
             console.error(err.message);
             res.status(500).send('Internal server error');
         } else {
-            // Get the usernames for all users in the list
-            const userIds = rows.map(row => row.user_id);
-            db.all('SELECT id, username FROM users WHERE id IN (' + userIds.map(() => '?').join(',') + ')', userIds, (err, userRows) => {
+            // Retrieve all history records with the given Quizlet ID
+            db.all('SELECT user_id, COUNT(*) AS word_count FROM history WHERE quizlet_id = ? GROUP BY user_id ORDER BY word_count DESC', [quizlet_id], (err, rows) => {
                 if (err) {
                     console.error(err.message);
                     res.status(500).send('Internal server error');
                 } else {
-                    // Map the history rows to HTML list items with usernames and word counts
-                    const rankList = rows.map((row, index) => {
-                        const userRow = userRows.find(user => user.id === row.user_id);
-                        const username = userRow ? userRow.username : '[unknown]';
-                        return `<li>${username}: ${row.word_count} words</li>`;
+                    // Get the usernames for all users in the list
+                    const userIds = rows.map(row => row.user_id);
+                    db.all('SELECT id, username FROM users WHERE id IN (' + userIds.map(() => '?').join(',') + ')', userIds, (err, userRows) => {
+                        if (err) {
+                            console.error(err.message);
+                            res.status(500).send('Internal server error');
+                        } else {
+                            // Get the top 10 users and their word counts
+                            const topRows = rows.slice(0, 10);
+                            const topUserIds = topRows.map(row => row.user_id);
+                            const topUsernames = userRows.filter(row => topUserIds.includes(row.id)).map(row => row.username);
+                            const topWordCounts = topRows.map(row => row.word_count);
+
+                            // Map the history rows to HTML list items with usernames and word counts
+                            const rankList = topRows.map((row, index) => {
+                                const username = topUsernames[index];
+                                return `<li>${username}: ${row.word_count} words</li>`;
+                            });
+
+                            let html = `<!DOCTYPE html><html><head><title>Ranking</title><link rel="icon" type="image/x-icon" href="../favicon.ico" /><link rel="stylesheet" type="text/css" href="/public/rank/style.css" /></head><body>`;
+
+                            if (rankList.length != 0) {
+                                // Combine the list items into an ordered list
+                                html += `<h1>Leaderboard - <a href="https://quizlet.com/${quizlet_id}">${row.quizlet_title}</a></h1><ol>${rankList.join('')}</ol>`;
+                                res.header('Content-Type', 'text/html');
+                                res.write(html);
+
+                                // Generate a bar graph using Chart.js and send it
+                                const labels = topUsernames;
+                                const data = topWordCounts;
+                                const chartCanvas = `<canvas id="bar-chart" width="400" height="400"></canvas>`;
+                                const chartScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)} }] }, options: { responsive: false } });</script>`;
+                                res.write(chartCanvas);
+                                res.write(chartScript);
+                                res.write(`<script type="text/javascript" src="/public/rank/script.js"></script></body></html>`);
+                                console.log("Sending ", html);
+                                res.end();
+                            } else {
+                                html += `<h1>Leaderboard</h1><p>No one has typed any words yet!</p>`;
+                                console.log("Sending ", html);
+                                res.header('Content-Type', 'text/html');
+                                res.send(`${html}<script type="text/javascript" src="/public/rank/script.js"></script></body></html>`);
+                            }
+                        }
                     });
-                    if (rankList.length != 0)
-                    // Combine the list items into an ordered list and send the response
-                    {
-                        const html = `<h1>Leaderboard</h1><ol>${rankList.join('')}</ol>`;
-                        res.send(html);
-                    }
-                    else {
-                        const html = `<h1>Leaderboard</h1><p>No one has typed any words yet!</p>`;
-                        res.send(html);
-                    }
                 }
             });
         }
