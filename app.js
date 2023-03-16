@@ -22,6 +22,47 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/rank/words', (req, res) => {
+    const quizlet_id = req.query.quizlet_id;
+    const dataPath = path.join(__dirname, 'data');
+    checkAndCreateDir(dataPath);
+    const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
+
+    // Retrieve all history records with the given Quizlet ID
+    db.all('SELECT user_id, COUNT(*) AS word_count FROM history WHERE quizlet_id = ? GROUP BY user_id ORDER BY word_count DESC', [quizlet_id], (err, rows) => {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Internal server error');
+        } else {
+            // Get the usernames for all users in the list
+            const userIds = rows.map(row => row.user_id);
+            db.all('SELECT id, username FROM users WHERE id IN (' + userIds.map(() => '?').join(',') + ')', userIds, (err, userRows) => {
+                if (err) {
+                    console.error(err.message);
+                    res.status(500).send('Internal server error');
+                } else {
+                    // Map the history rows to HTML list items with usernames and word counts
+                    const rankList = rows.map((row, index) => {
+                        const userRow = userRows.find(user => user.id === row.user_id);
+                        const username = userRow ? userRow.username : '[unknown]';
+                        return `<li>${username}: ${row.word_count} words</li>`;
+                    });
+
+                    // Combine the list items into an ordered list and send the response
+                    const html = `<ol id="word">${rankList.join('')}</ol>`;
+                    res.send(`<!DOCTYPE html><html><head><link rel="stylesheet" href="rank/style.css"></head><body>${html}</body></html>`);
+                }
+            });
+        }
+    });
+});
+
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     console.log(username, password);
