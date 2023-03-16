@@ -306,7 +306,7 @@ app.get('/rank/words', (req, res) => {
                                 return `<li>${username}: ${row.word_count} words</li>`;
                             });
 
-                            let html = `<!DOCTYPE html><html><head><link rel="stylesheet" type="text/css" href="/public/rank/style.css"></head><body>`;
+                            let html = `<!DOCTYPE html><html><head><title>Ranking</title><link rel="icon" type="image/x-icon" href="../favicon.ico" /><link rel="stylesheet" type="text/css" href="/public/rank/style.css" /></head><body>`;
 
                             if (rankList.length != 0) {
                                 // Combine the list items into an ordered list
