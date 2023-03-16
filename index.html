@@ -7,7 +7,6 @@
   <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-  <main>
     <section id="login" style="display: block;">
       <h1>Typing Game</h1>
       <form method="post" onsubmit="event.preventDefault(); login();" id="loginForm">
@@ -29,24 +28,32 @@
       </form>
     </section>
     <section id="game" style="display: none;">
-      <div id="termAndDef">
-        <p id="term"></p>
-        <p id="def"></p>
-        <p id="word_count"></p>
-      </div>
+      <p id="term"></p>
+      <p id="def" onclick="setTimeout('this.focus()', 0);"></p>
+      <p id="word_count"></p>
     </section>
     <section id="stats">
       <button id="menuToggle">&#9776;</button>
-      <div id="historyMenu">
+      <div id="menu">
         <div id="history"></div>
+        <div id="settings">
+          <h2>Settings</h2>
+          <table>
+            <thead>
+              <tr><th>Setting</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Coming Soon: </td><td>ON</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-
       <p id="title"></p>
+      <p id="leaderboard"></p>
     </section>
     <section id="hidden">
       <input type="password" onblur="this.focus()"  id="typingInput" style="opacity: 0; position: absolute; left: -9999px; top: 0; display: none;" autofocus autocomplete="off">
     </section>
-  </main>
   <script async src="script.js"></script>
 </body>
 </html>
