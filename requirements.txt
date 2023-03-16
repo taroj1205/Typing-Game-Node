@@ -6,3 +6,4 @@ sqlite3==5.1.4
 user-agents==1.0.1317
 kuroshiro==1.2.0
 kuroshiro-analyzer-kuromoji==1.1.0
+chart.js==4.2.1
