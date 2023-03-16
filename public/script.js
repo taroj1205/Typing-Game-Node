@@ -14,7 +14,7 @@ menuToggle = document.getElementById("menuToggle");
 menuScene = document.getElementById("menu");
 gameTitle = document.getElementById("title");
 wordCountText = document.getElementById("word_count");
-leaderboardText = document.getElementById("leaderboard");
+linkText = document.getElementById("link");
 
 const hostname = window.location.hostname; // Get the hostname of the current page
 const port = 8000; // Set the port number for your server
@@ -47,7 +47,7 @@ const start = (username, response) => {
     typingInput.style.display = 'block';
     gameTitle.textContent = response.title;
     quizlet_id = response.quizlet_id;
-    addLeaderboardLink(quizlet_id);
+    addLinks(username, quizlet_id);
     getHistory(username, response);
     newWord(username, response);
 }
@@ -234,12 +234,18 @@ const displayHistory = (response) => {
     });
 }
 
-const addLeaderboardLink = (quizlet_id) => {
-    const link = document.createElement('a');
-    link.href = `${address}/rank/words?quizlet_id=${quizlet_id}`;
-    link.textContent = 'Go to leaderboard';
-    link.target = '_blank'; // Open link in a new tab
-    leaderboardText.appendChild(link);
+const addLinks = (username, quizlet_id) => {
+    const leaderboardLink = document.createElement('a');
+    leaderboardLink.href = `${address}/ranking?quizlet_id=${quizlet_id}`;
+    leaderboardLink.textContent = 'Go to leaderboard';
+    leaderboardLink.target = '_blank'; // Open link in a new tab
+    linkText.appendChild(leaderboardLink);
+
+    const profileLink = document.createElement('a');
+    profileLink.href = `${address}/profile/?user=${username}`;
+    profileLink.textContent = 'Go to your profile';
+    profileLink.target = '_blank'; // Open link in a new tab
+    linkText.appendChild(profileLink);
 };
 
 const addHistoryDisplay = (term, def) => {

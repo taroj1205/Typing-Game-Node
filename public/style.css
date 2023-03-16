@@ -81,7 +81,6 @@ body {
 #history table {
   table-layout: fixed;
   width: 50%;
-  height: 100%;
   margin-top: 20px;
 }
 
@@ -128,14 +127,21 @@ body {
   margin: 1.5rem 1rem;
 }
 
-#leaderboard a {
+#link a {
   position: absolute;
   bottom: 1rem;
-  left: 1rem;
   color: #3b88f5;
   text-decoration: none;
   font-size: 1.5rem;
   z-index: 99999;
+}
+#link a:first-child {
+  text-align: left;
+  left: 1rem;
+}
+#link a:nth-child(2) {
+  text-align: right;
+  right: 1rem;
 }
 
 #settings {
