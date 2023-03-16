@@ -6,9 +6,10 @@ const userAgent = require('user-agents');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+const http = require('http');
 const app = express();
 const port = process.env.PORT;
-const address = process.env.ADDRESS;
+const address = process.env.IP_ADDRESS;
 
 const Kuroshiro = require('kuroshiro').default;
 const KuromojiAnalyzer = require('kuroshiro-analyzer-kuromoji');
@@ -55,8 +56,8 @@ app.get('/rank/words', (req, res) => {
                     });
 
                     // Combine the list items into an ordered list and send the response
-                    const html = `<ol id="word">${rankList.join('')}</ol>`;
-                    res.send(`<!DOCTYPE html><html><head><link rel="stylesheet" href="rank/style.css"></head><body>${html}</body></html>`);
+                    const html = `<ol>${rankList.join('')}</ol>`;
+                    res.send(html);
                 }
             });
         }
@@ -339,6 +340,6 @@ function sleep(ms) {
     });
 }
 
-const server = app.listen(port, () => {
-    console.log(`Server listening on ${address}:${port}`);
+const server = app.listen(port, address, () => {
+    console.log(`Server listening on http://${address}:${port}`);
 });

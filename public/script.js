@@ -1,4 +1,3 @@
-address = 'http://localhost:3000';
 urlInput = document.getElementById("url");
 usernameInput = document.getElementById("username");
 passwordInput = document.getElementById("password");
@@ -16,6 +15,12 @@ menuScene = document.getElementById("menu");
 gameTitle = document.getElementById("title");
 wordCountText = document.getElementById("word_count");
 leaderboardText = document.getElementById("leaderboard");
+
+const hostname = window.location.hostname; // Get the hostname of the current page
+const port = 8000; // Set the port number for your server
+const protocol = window.location.protocol; // Get the protocol (http or https) of the current page
+
+const address = `${protocol}//${hostname}:${port}`; // Build the URL for your server
 
 window.onload = () => {
     loginSection.style.display = 'block';
@@ -296,3 +301,17 @@ menuToggle.addEventListener("click", function() {
         menuToggle.textContent = "\u2630";
     }
 });
+
+const furiganaSetting = () => {
+    const rtElements = document.querySelectorAll('rt'); // Get all rt elements
+    for (let i = 0; i < rtElements.length; i++) {
+        const rtElement = rtElements[i];
+        if (rtElement.style.display === 'none') {
+            rtElement.style.display = 'block'; // Show hidden rt element
+            localStorage.setItem('furigana', 'true');
+        } else {
+            rtElement.style.display = 'none'; // Hide visible rt element
+            localStorage.setItem('furigana', 'false');
+        }
+    }
+}
