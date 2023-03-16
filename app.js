@@ -276,10 +276,16 @@ app.get('/rank/words', (req, res) => {
                         const username = userRow ? userRow.username : '[unknown]';
                         return `<li>${username}: ${row.word_count} words</li>`;
                     });
-
+                    if (rankList.length != 0)
                     // Combine the list items into an ordered list and send the response
-                    const html = `<ol>${rankList.join('')}</ol>`;
-                    res.send(html);
+                    {
+                        const html = `<h1>Leaderboard</h1><ol>${rankList.join('')}</ol>`;
+                        res.send(html);
+                    }
+                    else {
+                        const html = `<h1>Leaderboard</h1><p>No one has typed any words yet!</p>`;
+                        res.send(html);
+                    }
                 }
             });
         }

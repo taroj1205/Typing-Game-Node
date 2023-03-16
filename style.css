@@ -20,10 +20,10 @@ body {
 }
 
 #login h1 {
-  font-size: calc(var(--vvw) / 20);
+  font-size: 3rem;
 }
 #login label, #login input, #login button {
-  font-size: calc(var(--vvw) / 70);
+  font-size: 1rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -43,19 +43,31 @@ body {
   text-align: center;
 }
 #game p {
-  margin: 0;
   white-space: nowrap;
+  width: var(--vvw);
+  text-align: center;
+  margin: 0;
 }
 #term {
-  font-size: calc(var(--vvw) / 25);
+  font-size: 4rem;
+  position: fixed;
+  white-space: nowrap;
+  bottom: 5rem;
 }
 #def {
-  font-size: calc(var(--vvw) / 15);
+  font-size: 7rem;
+  position: fixed;
+  transform: translateY(-50%);
 }
 #word_count {
-    font-size: calc(var(--vvw) / 60);
+  font-size: 2rem;
+  transform: translateY(170%);
 }
 
+#stats {
+  width: var(--vvw);
+  margin: 0 0 !important;
+}
 #history {
   position: absolute;
   white-space: nowrap;
@@ -68,27 +80,29 @@ body {
 }
 #history table {
   table-layout: fixed;
-  width: var(--vvw);
+  width: 50%;
+  height: 100%;
+  margin-top: 20px;
 }
 
-#history td {
+#stats td {
   overflow-x: auto !important;
 }
 
-#history td:first-child {
+#stats td:first-child {
   text-align: right;
 }
 
-#history td:nth-child(2) {
+#stats td:nth-child(2) {
   text-align: left;
 }
-#historyMenu {
+#menu {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
   width: 100%;
-  z-index: 99999;
+  z-index: 999;
   background-color: #262626;
   display: none;
 }
@@ -97,11 +111,11 @@ body {
   top: 0;
   left: 0;
   margin: 1rem;
-  font-size: calc(var(--vvw) / 60);
+  font-size: 2.5rem;
   background: transparent;
   border: none;
   cursor: pointer;
-  z-index: 100000;
+  z-index: 10000;
   color: #ffffff;
 }
 
@@ -112,7 +126,6 @@ body {
 #title {
   text-align: right;
   margin: 1.5rem 1rem;
-  font-size: calc(var(--vvw) / 70);
 }
 
 #leaderboard a {
@@ -121,5 +134,31 @@ body {
   left: 1rem;
   color: #3b88f5;
   text-decoration: none;
-  font-size: calc(var(--vvw) / 70);
+  font-size: 1.5rem;
+  z-index: 99999;
+}
+
+#settings {
+  position: relative;
+  float: right;
+  width: 50%;
+  height: var(--vvh);
+  border-left: white solid 1px;
+  z-index: 10001;
+}
+#settings h2 {
+  text-align: center;
+}
+#settings table {
+  table-layout: fixed;
+  width: 100%;
+}
+#settings th:first-child, #settings td:first-child {
+  text-align: right;
+}
+#settings th:nth-child(2), #settings td:nth-child(2) {
+  text-align: left;
+}
+#settings th, #settings td {
+  padding: 0.5rem;
 }

@@ -12,7 +12,7 @@ titleHTML = document.querySelector("title")
 typingInput = document.getElementById("typingInput");
 historyDIV = document.getElementById("history");
 menuToggle = document.getElementById("menuToggle");
-historyMenu = document.getElementById("historyMenu");
+menuScene = document.getElementById("menu");
 gameTitle = document.getElementById("title");
 wordCountText = document.getElementById("word_count");
 leaderboardText = document.getElementById("leaderboard");
@@ -282,7 +282,7 @@ document.addEventListener("keypress", function(event) {
 })
 
 menuToggle.addEventListener("click", function() {
-    historyMenu.style.display = (historyMenu.style.display === "inline-block") ? "none" : "inline-block";
+    menuScene.style.display = (menuScene.style.display === "inline-block") ? "none" : "inline-block";
     typingInput.style.display = (typingInput.style.display === "block") ? "none" : "block";
     gameSection.style.display = (gameSection.style.display === "block") ? "none" : "block";
     if (typingInput.style.display === "block")
