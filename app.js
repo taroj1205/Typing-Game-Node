@@ -1,8 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const puppeteer = require('puppeteer');
-const userAgent = require('user-agents');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
@@ -108,49 +106,38 @@ async function validateCredentials(db, user, username, password) {
     }
 }
 
-// create global browser instance
-let browser;
-
-// initialize global browser instance
-(async () => {
-    browser = await puppeteer.launch({
-        userDataDir: path.join(__dirname, 'userData')
-    });
-})();
-
 app.get('/get/quizlet', async (req, res) => {
     const allowed_domains = [
         'quizlet.com',
     ];
-    const quizlet_id_match = req.query.url.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
-    const quizlet_id = quizlet_id_match[1];
-    const url = `https://quizlet.com/${quizlet_id}`;
-    if (!url.includes(allowed_domains)) {
+
+    if (!req.query.url.includes(allowed_domains)) {
         return res.status(400).send('Invalid URL');
     }
 
-    let page = null;
-    let list = null;
+    const quizlet_id_match = req.query.url.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+    const quizlet_id = quizlet_id_match[1];
+
     let title = null;
+    let term = [];
+    let def = [];
+    let defLang = [];
+    let termLang = [];
 
     try {
-        const browser = await puppeteer.launch();
-        page = await browser.newPage();
-        await page.setUserAgent(userAgent.random().toString());
-        await page.goto(url, { timeout: 15000 });
-
-        list = await page.$$eval('.TermText', terms => terms.map(term => term.textContent));
-        title = (await page.title()).replace(' | Quizlet', '');
-
-        let term = [];
-        let def = [];
-        for (let i = 0; i < list.length; i += 2) {
-            term.push(list[i]);
-            def.push(list[i + 1]);
-        }
-
         const dataPath = path.join(__dirname, 'data');
         checkAndCreateDir(dataPath);
+        const terms = await quizlet(quizlet_id);
+        let term = [];
+        let def = [];
+        for (let { cardSides: [{ media: [{ plainText: termText }] }, { media: [{ plainText: defText }] }] } of terms) {
+            term.push(termText);
+            def.push(defText);
+            console.log(termText, defText);
+        }
+
+        const { quizlet_title, termLang, defLang } = await getQuizletDetails(quizlet_id);
+
         const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
         db.serialize(() => {
             db.run(`CREATE TABLE IF NOT EXISTS quizlet
@@ -158,34 +145,33 @@ app.get('/get/quizlet', async (req, res) => {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 quizlet_id TEXT,
                 quizlet_title TEXT,
+                quizlet_def_language TEXT,
+                quizlet_term_language TEXT,
                 UNIQUE(quizlet_id)
             )`);
-
             db.get('SELECT * FROM quizlet WHERE quizlet_id = ?', [quizlet_id], (err, row) => {
                 if (err) {
                     console.error(err.message);
                     res.status(500).send('Internal server error');
                 } else {
                     if (!row) {
-                        db.run('INSERT INTO quizlet (quizlet_id, quizlet_title) VALUES (?, ?)', [quizlet_id, title], (err) => {
+                        db.run('INSERT INTO quizlet (quizlet_id, quizlet_title, quizlet_def_language, quizlet_term_language) VALUES (?, ?, ?, ?)', [quizlet_id, quizlet_title, defLang, termLang], (err) => {
                             if (err) {
                                 console.error(err.message);
                                 res.status(500).send('Internal server error');
                             } else {
-                                const quizletID = this.lastID;
-                                for (let i = 0; i < term.length; i++) {
-                                    db.run('INSERT INTO history (user_id, quizlet_id, term, def) VALUES (?, ?, ?, ?)', [null, quizletID, term[i], def[i]], (err) => {
-                                        if (err) {
-                                            console.error(err.message);
-                                            res.status(500).send('Internal server error');
-                                        }
-                                    });
-                                }
                                 res.json({term, def, title, quizlet_id});
                             }
                         });
                     } else {
-                        res.json({term, def, title, quizlet_id});
+                        db.run('UPDATE quizlet SET quizlet_title = ?, quizlet_def_language = ?, quizlet_term_language = ? WHERE quizlet_id = ?', [quizlet_title, defLang, termLang, quizlet_id], (err) => {
+                            if (err) {
+                                console.error(err.message);
+                                res.status(500).send('Internal server error');
+                            } else {
+                                res.json({term, def, quizlet_title, quizlet_id});
+                            }
+                        });
                     }
                 }
             });
@@ -193,16 +179,7 @@ app.get('/get/quizlet', async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error retrieving Quizlet data');
-    } finally {
-        if (page !== null) {
-            await page.close();
-        }
     }
-});
-
-// close global browser instance when application exits
-process.on('exit', () => {
-    browser.close();
 });
 
 function checkAndCreateDir(dataPath) {
@@ -436,6 +413,32 @@ function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
+}
+
+async function quizlet(id){
+    let res = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=1`).then(res => res.json())
+    let currentLength = 5;
+    let token = res.responses[0].paging.token
+    let terms = res.responses[0].models.studiableItem;
+    let page = 2;
+    //console.log({token, terms})
+    while (currentLength >= 5){
+        let res = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=${page++}&pagingToken=${token}`).then(res => res.json());
+        terms.push(...res.responses[0].models.studiableItem);
+        currentLength = res.responses[0].models.studiableItem.length;
+        token = res.responses[0].paging.token;
+    }
+    return terms;
+}
+
+async function getQuizletDetails(id) {
+    const response = await fetch(`https://quizlet.com/webapi/3.4/sets/${id}`).then(res => res.json());
+    const set = response.responses[0].models.set[0];
+    return {
+        quizlet_title: set.title,
+        termLang: set.wordLang,
+        defLang: set.defLang
+    };
 }
 
 app.listen(port, address, () => {

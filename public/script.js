@@ -45,7 +45,7 @@ const start = (username, response) => {
     gameSection.style.display = 'block';
     statsSection.style.display = 'block';
     typingInput.style.display = 'block';
-    gameTitle.textContent = response.title;
+    gameTitle.textContent = response.quizlet_title;
     quizlet_id = response.quizlet_id;
     addLinks(username, quizlet_id);
     getHistory(username, response);
