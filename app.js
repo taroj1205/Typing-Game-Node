@@ -125,12 +125,22 @@ app.get('/get/quizlet', async (req, res) => {
     const quizlet_id_match = req.query.url.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
     const quizlet_id = quizlet_id_match[1];
     const url = `https://quizlet.com/${quizlet_id}`;
-    if (url.includes(allowed_domains)) {
-        const page = await browser.newPage();
+    if (!url.includes(allowed_domains)) {
+        return res.status(400).send('Invalid URL');
+    }
+
+    let page = null;
+    let list = null;
+    let title = null;
+
+    try {
+        const browser = await puppeteer.launch();
+        page = await browser.newPage();
         await page.setUserAgent(userAgent.random().toString());
-        await page.goto(url);
-        const list = await page.$$eval('.TermText', terms => terms.map(term => term.textContent));
-        const title = (await page.title()).replace(' | Quizlet', '');
+        await page.goto(url, { timeout: 15000 });
+
+        list = await page.$$eval('.TermText', terms => terms.map(term => term.textContent));
+        title = (await page.title()).replace(' | Quizlet', '');
 
         let term = [];
         let def = [];
@@ -138,7 +148,6 @@ app.get('/get/quizlet', async (req, res) => {
             term.push(list[i]);
             def.push(list[i + 1]);
         }
-        await page.close();
 
         const dataPath = path.join(__dirname, 'data');
         checkAndCreateDir(dataPath);
@@ -181,8 +190,13 @@ app.get('/get/quizlet', async (req, res) => {
                 }
             });
         });
-    } else {
-        res.status(400).send('Error: URL not allowed');
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error retrieving Quizlet data');
+    } finally {
+        if (page !== null) {
+            await page.close();
+        }
     }
 });
 
