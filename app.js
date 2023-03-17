@@ -340,14 +340,16 @@ app.get('/leaderboard', (req, res) => {
                         } else {
                             // Get the top 10 users and their word counts
                             const topRows = rows.slice(0, 10);
-                            const topUserIds = topRows.map(row => row.user_id);
-                            const topUsernames = userRows.filter(row => topUserIds.includes(row.id)).map(row => row.username);
+                            const topUsernames = topRows.map(row => {
+                                const userRow = userRows.find(user => user.id === row.user_id);
+                                return userRow.username;
+                            });
                             const topWordCounts = topRows.map(row => row.word_count);
 
                             // Map the history rows to HTML list items with usernames and word counts
                             const rankList = topRows.map((row, index) => {
                                 const username = topUsernames[index];
-                                return `<li><a href="/profile/?user=taroj1205">${username}</a>: ${row.word_count} words</li>`;
+                                return `<li><a href="/profile?user=${username}">${username}</a>: ${row.word_count} words</li>`;
                             });
 
                             let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${row.quizlet_title}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/lb/style.css" /></head><body>`;
@@ -360,22 +362,8 @@ app.get('/leaderboard', (req, res) => {
 
                                 const labels = topUsernames;
                                 const data = topWordCounts;
-                                const minValue = Math.min(...data);
-                                const maxValue = Math.max(...data);
-                                const gradient = (value) => {
-                                    const hue = ((1 - (value - minValue) / (maxValue - minValue)) * 120).toString(10);
-                                    return `hsl(${hue}, 100%, 50%)`;
-                                };
-                                const sortedData = [...data].sort((a, b) => b - a);
-                                const sortedLabels = [];
-                                const sortedColors = [];
-                                for (let i = 0; i < sortedData.length; i++) {
-                                    const index = data.indexOf(sortedData[i]);
-                                    sortedLabels.push(labels[index]);
-                                    sortedColors.push(gradient(sortedData[i]));
-                                }
                                 const chartCanvas = `<canvas id="bar-chart" width="400" height="400"></canvas>`;
-                                const chartScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(sortedLabels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(sortedData)}, backgroundColor: ${JSON.stringify(sortedColors)} }] }, options: { responsive: false } });</script>`;
+                                const chartScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)} }] }, options: { responsive: false } });</script>`;
                                 res.write(chartCanvas);
                                 res.write(chartScript);
                                 res.write(`</body></html>`);
@@ -415,17 +403,26 @@ app.get('/profile', (req, res) => {
                 const minValue = Math.min(...data);
                 const maxValue = Math.max(...data);
                 const gradient = (value) => {
-                    const hue = ((1 - (value - minValue) / (maxValue - minValue)) * 120).toString(10);
-                    return `hsl(${hue}, 100%, 50%)`;
+                    if (maxValue === minValue) {
+                        // Use the first color that would be generated if there were more data points
+                        const hue = (200 - 0.5 * 200).toString(10);
+                        return `hsl(${hue}, 70%, 60%)`;
+                    } else {
+                        // Calculate a value between 0 and 1 based on the position of the value between the min and max values
+                        const position = (value - minValue) / (maxValue - minValue);
+                        // Calculate a hue value between 200 (dark blue) and 0 (light pink)
+                        const hue = (200 - position * 200).toString(10);
+                        // Return a hsl color with 70% saturation and 60% lightness
+                        return `hsl(${hue}, 70%, 60%)`;
+                    }
                 };
-                const colors = data.map(gradient);
+                const colors = data.map(value => gradient(value));
                 const barCanvas = `<canvas id="bar-chart" width="1000" height="400"></canvas>`;
-                const barScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(colors)} }] }, options: { responsive: false } });</script>`;
+                const barScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(data.map(() => '#22587d'))} }] }, options: { responsive: false } });</script>`;
                 const circleCanvas = `<canvas id="circle-chart" width="400" height="400"></canvas>`;
                 const circleScript = `<script>new Chart(document.getElementById('circle-chart'), { type: 'doughnut', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(colors)} }] }, options: { responsive: false } });</script>`;
                 res.send(`<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body><h1>${username}'s profile</h1><div id="bar">${barCanvas}</div><div id="circle">${circleCanvas}</div>${barScript}${circleScript}</body></html>`);
-
-            } else {
+        } else {
                 let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
                 html += `<h1>${username}'s profile</h1>`;
                 html += `<p>${username} has not typed any words yet.</p>`;
