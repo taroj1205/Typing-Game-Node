@@ -336,7 +336,7 @@ app.get('/leaderboard', (req, res) => {
                                 return `<li><a href="/profile/?user=taroj1205">${username}</a>: ${row.word_count} words</li>`;
                             });
 
-                            let html = `<!DOCTYPE html><html><head><title>Ranking</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/lb/style.css" /></head><body>`;
+                            let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${row.quizlet_title}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/lb/style.css" /></head><body>`;
 
                             if (rankList.length != 0) {
                                 // Combine the list items into an ordered list
@@ -344,11 +344,24 @@ app.get('/leaderboard', (req, res) => {
                                 res.header('Content-Type', 'text/html');
                                 res.write(html);
 
-                                // Generate a bar graph using Chart.js and send it
                                 const labels = topUsernames;
                                 const data = topWordCounts;
+                                const minValue = Math.min(...data);
+                                const maxValue = Math.max(...data);
+                                const gradient = (value) => {
+                                    const hue = ((1 - (value - minValue) / (maxValue - minValue)) * 120).toString(10);
+                                    return `hsl(${hue}, 100%, 50%)`;
+                                };
+                                const sortedData = [...data].sort((a, b) => b - a);
+                                const sortedLabels = [];
+                                const sortedColors = [];
+                                for (let i = 0; i < sortedData.length; i++) {
+                                    const index = data.indexOf(sortedData[i]);
+                                    sortedLabels.push(labels[index]);
+                                    sortedColors.push(gradient(sortedData[i]));
+                                }
                                 const chartCanvas = `<canvas id="bar-chart" width="400" height="400"></canvas>`;
-                                const chartScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)} }] }, options: { responsive: false } });</script>`;
+                                const chartScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(sortedLabels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(sortedData)}, backgroundColor: ${JSON.stringify(sortedColors)} }] }, options: { responsive: false } });</script>`;
                                 res.write(chartCanvas);
                                 res.write(chartScript);
                                 res.write(`</body></html>`);
@@ -382,14 +395,22 @@ app.get('/profile', (req, res) => {
         } else {
             console.log(username);
             if (rows.length != 0) {
-                // Generate a bar graph using Chart.js and send it
-                const labels = rows.map(row => `${row.quizlet_title} - ${row.quizlet_id}`);
-                const data = rows.map(row => row.word_count);
+                const sortedRows = rows.sort((a, b) => b.word_count - a.word_count);
+                const labels = sortedRows.map(row => `${row.quizlet_title} - ${row.quizlet_id}`);
+                const data = sortedRows.map(row => row.word_count);
+                const minValue = Math.min(...data);
+                const maxValue = Math.max(...data);
+                const gradient = (value) => {
+                    const hue = ((1 - (value - minValue) / (maxValue - minValue)) * 120).toString(10);
+                    return `hsl(${hue}, 100%, 50%)`;
+                };
+                const colors = data.map(gradient);
                 const barCanvas = `<canvas id="bar-chart" width="1000" height="400"></canvas>`;
-                const barScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)} }] }, options: { responsive: false } });</script>`;
+                const barScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(colors)} }] }, options: { responsive: false } });</script>`;
                 const circleCanvas = `<canvas id="circle-chart" width="400" height="400"></canvas>`;
-                const circleScript = `<script>new Chart(document.getElementById('circle-chart'), { type: 'doughnut', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)} }] }, options: { responsive: false } });</script>`;
+                const circleScript = `<script>new Chart(document.getElementById('circle-chart'), { type: 'doughnut', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(colors)} }] }, options: { responsive: false } });</script>`;
                 res.send(`<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body><h1>${username}'s profile</h1><div id="bar">${barCanvas}</div><div id="circle">${circleCanvas}</div>${barScript}${circleScript}</body></html>`);
+
             } else {
                 let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
                 html += `<h1>${username}'s profile</h1>`;
@@ -404,15 +425,6 @@ function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
-}
-
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
 }
 
 app.listen(port, address, () => {
