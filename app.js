@@ -299,7 +299,7 @@ app.get('/get/furigana', async (req, res) => {
     }
 });
 
-app.get('/ranking', (req, res) => {
+app.get('/leaderboard', (req, res) => {
     const quizlet_id = req.query.quizlet_id;
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
@@ -333,10 +333,10 @@ app.get('/ranking', (req, res) => {
                             // Map the history rows to HTML list items with usernames and word counts
                             const rankList = topRows.map((row, index) => {
                                 const username = topUsernames[index];
-                                return `<li>${username}: ${row.word_count} words</li>`;
+                                return `<li><a href="/profile/?user=taroj1205">${username}</a>: ${row.word_count} words</li>`;
                             });
 
-                            let html = `<!DOCTYPE html><html><head><title>Ranking</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/rank/style.css" /></head><body>`;
+                            let html = `<!DOCTYPE html><html><head><title>Ranking</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/lb/style.css" /></head><body>`;
 
                             if (rankList.length != 0) {
                                 // Combine the list items into an ordered list
@@ -351,14 +351,14 @@ app.get('/ranking', (req, res) => {
                                 const chartScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)} }] }, options: { responsive: false } });</script>`;
                                 res.write(chartCanvas);
                                 res.write(chartScript);
-                                res.write(`<script type="text/javascript" src="/public/rank/script.js"></script></body></html>`);
+                                res.write(`</body></html>`);
                                 console.log("Sending ", html);
                                 res.end();
                             } else {
                                 html += `<h1>Leaderboard</h1><p>No one has typed any words yet!</p>`;
                                 console.log("Sending ", html);
                                 res.header('Content-Type', 'text/html');
-                                res.send(`${html}<script type="text/javascript" src="/public/rank/script.js"></script></body></html>`);
+                                res.send(`${html}</body></html>`);
                             }
                         }
                     });

@@ -236,7 +236,7 @@ const displayHistory = (response) => {
 
 const addLinks = (username, quizlet_id) => {
     const leaderboardLink = document.createElement('a');
-    leaderboardLink.href = `${address}/ranking?quizlet_id=${quizlet_id}`;
+    leaderboardLink.href = `${address}/leaderboard?quizlet_id=${quizlet_id}`;
     leaderboardLink.textContent = 'Go to leaderboard';
     leaderboardLink.target = '_blank'; // Open link in a new tab
     linkText.appendChild(leaderboardLink);
