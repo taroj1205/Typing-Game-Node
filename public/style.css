@@ -75,7 +75,7 @@ body {
   left: 0;
   right: 0;
   height: var(--vvh);
-  overflow-y: scroll !important;
+  overflow-y: auto !important;
   overflow-x: hidden !important;
 }
 #history table {

@@ -119,10 +119,6 @@ app.get('/get/quizlet', async (req, res) => {
     const quizlet_id = quizlet_id_match[1];
 
     let title = null;
-    let term = [];
-    let def = [];
-    let defLang = [];
-    let termLang = [];
 
     try {
         const dataPath = path.join(__dirname, 'data');
