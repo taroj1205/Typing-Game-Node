@@ -15,6 +15,10 @@ menuScene = document.getElementById("menu");
 gameTitle = document.getElementById("title");
 wordCountText = document.getElementById("word_count");
 linkText = document.getElementById("link");
+toggleFurigana = document.getElementById("toggleFurigana");
+furiganaSettingStatus = toggleFurigana.textContent;
+quizletLinkSettings = document.getElementById("quizletLinkSettings");
+submitQuizletButton = document.getElementById("submitQuizlet");
 
 const hostname = window.location.hostname; // Get the hostname of the current page
 const port = 8000; // Set the port number for your server
@@ -29,6 +33,21 @@ window.onload = () => {
     urlInput.value = localStorage.getItem('quizlet') || '';
     usernameInput.value = localStorage.getItem('username') || '';
     passwordInput.value = localStorage.getItem('password') || '';
+    const furiganaStatus = localStorage.getItem('furigana');
+
+    console.log(furiganaStatus);
+
+    if (!furiganaStatus) {
+        localStorage.setItem('furigana', 'OFF');
+    }
+
+    if (furiganaStatus === "ON") {
+        console.log('Showing furigana.');
+        showFurigana();
+    } else {
+        console.log("Hiding furigana.");
+        hideFurigana();
+    }
 }
 
 const setVisualViewport = () => {
@@ -134,6 +153,7 @@ const newWord = (username, response) => {
     typingInput.focus();
     furigana(term, (term) => {
         termText.innerHTML = term;
+        updateFurigana();
     });
     typing(num, def, term, username, response);
 }
@@ -235,6 +255,7 @@ const displayHistory = (response) => {
 }
 
 const addLinks = (username, quizlet_id) => {
+    linkText.innerHTML = '';
     const leaderboardLink = document.createElement('a');
     leaderboardLink.href = `${address}/leaderboard?quizlet_id=${quizlet_id}`;
     leaderboardLink.textContent = 'Go to leaderboard';
@@ -260,6 +281,7 @@ const addHistoryDisplay = (term, def) => {
 const addWordCountDisplay = () => {
     const wordCount = historyDIV.querySelector('table tbody').rows.length;
     wordCountText.innerHTML = `Words: ${wordCount}`;
+    updateFurigana();
 }
 
 const furigana = (term, callback) => {
@@ -294,30 +316,116 @@ document.addEventListener("keypress", function(event) {
 
 menuToggle.addEventListener("click", function() {
     menuScene.style.display = (menuScene.style.display === "inline-block") ? "none" : "inline-block";
-    typingInput.style.display = (typingInput.style.display === "block") ? "none" : "block";
     gameSection.style.display = (gameSection.style.display === "block") ? "none" : "block";
+
+    if (menuToggle.textContent === "\u2630") {
+        typingInput.style.display = "none";
+        menuToggle.textContent = "\u2716";
+    } else {
+        document.body.appendChild(typingInput);
+        typingInput.style.display = "block";
+        menuToggle.textContent = "\u2630";
+    }
+
+    quizletLinkSettings.value = localStorage.getItem('quizlet');
+
     if (typingInput.style.display === "block")
     {
         typingInput.focus();
         console.log("Focus changed!");
     }
-    if (menuToggle.textContent === "\u2630") {
-        menuToggle.textContent = "\u2716";
-    } else {
-        menuToggle.textContent = "\u2630";
-    }
 });
 
-const furiganaSetting = () => {
-    const rtElements = document.querySelectorAll('rt'); // Get all rt elements
+// Function to show all furigana elements
+const showFurigana = () => {
+    const rtElements = document.querySelectorAll('rt');
     for (let i = 0; i < rtElements.length; i++) {
         const rtElement = rtElements[i];
-        if (rtElement.style.display === 'none') {
-            rtElement.style.display = 'block'; // Show hidden rt element
-            localStorage.setItem('furigana', 'true');
+        rtElement.style.display = 'block';
+    }
+    toggleFurigana.textContent = 'ON';
+    localStorage.setItem('furigana', 'ON');
+};
+
+// Function to hide all furigana elements
+const hideFurigana = () => {
+    const rtElements = document.querySelectorAll('rt');
+    for (let i = 0; i < rtElements.length; i++) {
+        const rtElement = rtElements[i];
+        rtElement.style.display = 'none';
+    }
+    toggleFurigana.textContent = 'OFF';
+    localStorage.setItem('furigana', 'OFF');
+};
+
+// Main function for toggling furigana display
+const furiganaSetting = (status) => {
+    if (status === "ON") {
+        showFurigana();
+    } else if (status === "OFF") {
+        hideFurigana();
+    } else {
+        if (toggleFurigana.textContent === "OFF") {
+            showFurigana();
         } else {
-            rtElement.style.display = 'none'; // Hide visible rt element
-            localStorage.setItem('furigana', 'false');
+            hideFurigana();
         }
     }
+    toggleFurigana.innerHTML = localStorage.getItem('furigana');
+};
+
+const updateFurigana = () => {
+    if (toggleFurigana.textContent === "ON") {
+        showFurigana();
+    } else {
+        hideFurigana();
+    }
+};
+
+const getNewQuizletData = () => {
+    const urlValue = quizletLinkSettings.value;
+    const username = usernameInput.value;
+    submitQuizletButton.disabled = true;
+    const currentQuizlet = localStorage.getItem('quizlet');
+
+    if (urlValue != currentQuizlet) {
+        localStorage.setItem('quizlet', urlValue);
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `${address}/get/quizlet?url=${urlValue}`);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                console.log(response);
+                gameTitle.textContent = response.quizlet_title;
+                quizlet_id = response.quizlet_id;
+                addLinks(username, quizlet_id);
+                getHistory(username, response);
+                newWord(username, response);
+                submitQuizletButton.disabled = false;
+                menuToggle.click();
+            } else if (xhr.status === 400) {
+                console.error(xhr.statusText);
+                submitQuizletButton.disabled = false;
+                quizletLinkSettings.style.borderColor = 'red';
+                quizletLinkSettings.value = '';
+                quizletLinkSettings.placeholder = 'Please use quizlet.com';
+            } else {
+                console.error(xhr.statusText);
+                submitQuizletButton.disabled = false;
+                return;
+            }
+        };
+        xhr.onerror = function () {
+            console.error(xhr.statusText);
+            console.error('Request failed.');
+            submitQuizletButton.disabled = false;
+        };
+        xhr.send();
+    } else {
+        submitQuizletButton.disabled = false;
+        quizletLinkSettings.style.borderColor = 'red';
+    }
 }
+
+toggleFurigana.addEventListener("click", furiganaSetting);

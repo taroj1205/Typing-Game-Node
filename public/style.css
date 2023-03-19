@@ -137,11 +137,11 @@ body {
 }
 #link a:first-child {
   text-align: left;
-  left: 1rem;
+  left: 1.5rem;
 }
 #link a:nth-child(2) {
   text-align: right;
-  right: 1rem;
+  right: 1.5rem;
 }
 
 #settings {
@@ -167,4 +167,10 @@ body {
 }
 #settings th, #settings td {
   padding: 0.5rem;
+}
+#settings td:first-child::after {
+  content: " ";
+}
+#settings td:nth-child(2) {
+  cursor: pointer;
 }
