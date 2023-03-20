@@ -168,6 +168,8 @@ const typing = (num, def, term, username, response) => {
             const notYet = "<span style='color: #1fd755;' id='notYet'>" + def.substring(num) + "</span>";
             document.querySelector("#def").innerHTML = typedOut + notYet;
             if (num >= def.length) {
+                const wordCount = historyDIV.querySelector('table tbody').rows.length;
+                wordCountText.innerHTML = `Words: ${wordCount+1}`;
                 submitTyped(def, term, username, response);
                 newWord(username, response);
             }
