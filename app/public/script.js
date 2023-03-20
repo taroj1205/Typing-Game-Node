@@ -24,7 +24,7 @@ const hostname = window.location.hostname; // Get the hostname of the current pa
 const port = 8000; // Set the port number for your server
 const protocol = window.location.protocol; // Get the protocol (http or https) of the current page
 
-const address = `${protocol}//${hostname}:${port}`; // Build the URL for your server
+const address = ''; // = `${protocol}//${hostname}:${port}`; // Build the URL for your server
 
 window.onload = () => {
     loginSection.style.display = 'block';
