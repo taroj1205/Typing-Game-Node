@@ -149,7 +149,7 @@ const newWord = (username, response) => {
     const def = response.def[randomIndex];
     termText.textContent = term;
     defText.textContent = def;
-    titleHTML.textContent += ' - ' + response.title;
+    titleHTML.textContent += ' - ' + response.quizlet_title;
     typingInput.focus();
     furigana(term, (term) => {
         termText.innerHTML = term;
