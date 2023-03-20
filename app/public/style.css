@@ -63,6 +63,9 @@ body {
   font-size: 2rem;
   transform: translateY(170%);
 }
+ruby {
+  ruby-position: over;
+}
 
 #stats {
   width: var(--vvw);
