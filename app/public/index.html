@@ -39,11 +39,10 @@
     <div id="settings">
       <h2>Settings</h2>
       <table>
-        <thead>
-        <tr><th>Setting</th><th>Status</th></tr>
-        </thead>
         <tbody>
-        <tr><td>Coming Soon: </td><td>ON</td></tr>
+        <tr><td>Language:</td><td>English</td></tr>
+        <tr><td>Quizlet:</td><td><form method="post" onsubmit="event.preventDefault(); getNewQuizletData();" id="quizletForm"><input id="quizletLinkSettings" placeholder="https://quizlet.com/..." required><button type="submit" id="submitQuizlet">Submit</button></form></td></tr>
+        <tr><td>Furigana:</td><td id="toggleFurigana">OFF</td></tr>
         </tbody>
       </table>
     </div>
