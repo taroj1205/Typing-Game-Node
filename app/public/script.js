@@ -56,7 +56,7 @@ const setVisualViewport = () => {
     body.style.setProperty('--vvw', `${vv.width}px`);
     body.style.setProperty('--vvh', `${vv.height}px`);
 }
-setVisualViewport()
+setVisualViewport();
 window.visualViewport.addEventListener('resize', setVisualViewport)
 
 const start = (username, response) => {
