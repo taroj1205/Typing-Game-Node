@@ -9,6 +9,7 @@ body {
   font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
   overflow: hidden;
   font-size: 16px;
+  height: var(--vvh);
 }
 
 #login, #game {

@@ -52,9 +52,9 @@ window.onload = () => {
 
 const setVisualViewport = () => {
     const vv = window.visualViewport;
-    const body = document.body;
-    body.style.setProperty('--vvw', `${vv.width}px`);
-    body.style.setProperty('--vvh', `${vv.height}px`);
+    const root = document.documentElement;
+    root.style.setProperty('--vvw', `${vv.width}px`);
+    root.style.setProperty('--vvh', `${vv.height}px`);
 
     const linkHeight = linkText.clientHeight;
     const windowHeight = vv.height;
