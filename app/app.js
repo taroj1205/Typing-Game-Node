@@ -356,54 +356,101 @@ app.get('/leaderboard', (req, res) => {
     });
 });
 
-app.get('/profile', (req, res) => {
+app.get('/profile', async (req, res) => {
     const username = req.query.user;
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
     const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
 
-    // Retrieve all history records for the given user
-    db.all('SELECT quizlet.quizlet_id, quizlet.quizlet_title, COUNT(*) AS word_count FROM history JOIN quizlet ON history.quizlet_id = quizlet.quizlet_id JOIN users ON history.user_id = users.id WHERE users.username = ? GROUP BY quizlet.quizlet_id, quizlet.quizlet_title', [username], (err, rows) => {
-        if (err) {
-            console.error(err.message);
-            res.status(500).send('Internal server error');
+    try {
+        const result = await getDataProfile(username, db);
+
+        const count_per_day = await getWordCountPerDay(username, db);
+
+        console.log(username);
+
+        if (result.length != 0) {
+
+            const labels = result.labels;
+            const data = result.data;
+
+            const minValue = Math.min(...data);
+            const maxValue = Math.max(...data);
+            const gradient = (value) => {
+                if (maxValue === minValue) {
+                    // Use the first color that would be generated if there were more data points
+                    const hue = (200 - 0.5 * 200).toString(10);
+                    return `hsl(${hue}, 70%, 60%)`;
+                } else {
+                    // Calculate a value between 0 and 1 based on the position of the value between the min and max values
+                    const position = (value - minValue) / (maxValue - minValue);
+                    // Calculate a hue value between 200 (dark blue) and 0 (light pink)
+                    const hue = (200 - position * 200).toString(10);
+                    // Return a hsl color with 70% saturation and 60% lightness
+                    return `hsl(${hue}, 70%, 60%)`;
+                }
+            };
+            const colors = data.map(value => gradient(value));
+            const barCanvas = `<canvas id="bar-chart" width="1000" height="400"></canvas>`;
+            const barScript = `<script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(data.map(() => '#22587d'))} }] }, options: { responsive: false } });</script>`;
+            const circleCanvas = `<canvas id="circle-chart" width="400" height="400"></canvas>`;
+            const circleScript = `<script>new Chart(document.getElementById('circle-chart'), { type: 'doughnut', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(colors)} }] }, options: { responsive: false } });</script>`;
+
+            const labelsLine = count_per_day.map((item) => item.day);
+            const dataLine = count_per_day.map((item) => item.count_on_the_day);
+
+            console.log(labelsLine);
+            console.log(dataLine);
+
+            const lineCanvas = `<canvas id="line-chart" width="1000" height="400"></canvas>`;
+            const lineScript = `<script>new Chart(document.getElementById('line-chart'), { type: 'line', data: { labels: ${JSON.stringify(labelsLine)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(dataLine)}, backgroundColor: '#22587d' }] }, options: { responsive: false } });</script>`;
+            res.send(`<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body><h1>${username}'s profile</h1><div id="line">${lineCanvas}</div><div id="bar">${barCanvas}</div><div id="circle">${circleCanvas}</div><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>${lineScript}${barScript}${circleScript}</body></html>`);
         } else {
-            console.log(username);
-            if (rows.length != 0) {
+            let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
+            html += `<h1>${username}'s profile</h1>`;
+            html += `<p>${username} has not typed any words yet.</p>`;
+            res.send(html);
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('An error occurred');
+    }
+});
+
+async function getWordCountPerDay(username, db) {
+    return new Promise((resolve, reject) => {
+        db.all(`SELECT DATE(history.created_at) AS day, COUNT(*) AS word_count
+      FROM history JOIN users
+      ON history.user_id = users.id
+      WHERE users.username = ?
+      GROUP BY day;`, [username], (err, rows) => {
+            if (err) {
+                console.error(err.message);
+                reject(err);
+            } else {
+                const wordCountPerDay = rows.map(row => ({ day: row.day, count_on_the_day: row.word_count }));
+                resolve(wordCountPerDay);
+            }
+        });
+    });
+}
+
+async function getDataProfile(username, db) {
+    return new Promise((resolve, reject) => {
+        db.all('SELECT quizlet.quizlet_id, quizlet.quizlet_title, COUNT(*) AS word_count FROM history JOIN quizlet ON history.quizlet_id = quizlet.quizlet_id JOIN users ON history.user_id = users.id WHERE users.username = ? GROUP BY quizlet.quizlet_id, quizlet.quizlet_title', [username], (err, rows) => {
+            if (err) {
+                console.error(err.message);
+                reject(err);
+            } else {
                 const sortedRows = rows.sort((a, b) => b.word_count - a.word_count);
                 const labels = sortedRows.map(row => `${row.quizlet_title} - ${row.quizlet_id}`);
                 const data = sortedRows.map(row => row.word_count);
-                const minValue = Math.min(...data);
-                const maxValue = Math.max(...data);
-                const gradient = (value) => {
-                    if (maxValue === minValue) {
-                        // Use the first color that would be generated if there were more data points
-                        const hue = (200 - 0.5 * 200).toString(10);
-                        return `hsl(${hue}, 70%, 60%)`;
-                    } else {
-                        // Calculate a value between 0 and 1 based on the position of the value between the min and max values
-                        const position = (value - minValue) / (maxValue - minValue);
-                        // Calculate a hue value between 200 (dark blue) and 0 (light pink)
-                        const hue = (200 - position * 200).toString(10);
-                        // Return a hsl color with 70% saturation and 60% lightness
-                        return `hsl(${hue}, 70%, 60%)`;
-                    }
-                };
-                const colors = data.map(value => gradient(value));
-                const barCanvas = `<canvas id="bar-chart" width="1000" height="400"></canvas>`;
-                const barScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(data.map(() => '#22587d'))} }] }, options: { responsive: false } });</script>`;
-                const circleCanvas = `<canvas id="circle-chart" width="400" height="400"></canvas>`;
-                const circleScript = `<script>new Chart(document.getElementById('circle-chart'), { type: 'doughnut', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(colors)} }] }, options: { responsive: false } });</script>`;
-                res.send(`<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body><h1>${username}'s profile</h1><div id="bar">${barCanvas}</div><div id="circle">${circleCanvas}</div>${barScript}${circleScript}</body></html>`);
-        } else {
-                let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
-                html += `<h1>${username}'s profile</h1>`;
-                html += `<p>${username} has not typed any words yet.</p>`;
-                res.send(html);
+                const result = { labels, data };
+                resolve(result);
             }
-        }
+        });
     });
-});
+}
 
 function sleep(ms) {
     return new Promise((resolve) => {

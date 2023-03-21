@@ -10,7 +10,7 @@ body {
     height: 100%;
 }
 
-#bar, #circle {
+#bar, #circle, #line {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -25,6 +25,6 @@ a {
     color: #3b88f5;
 }
 
-div#bar {
+div {
     margin-bottom: 30px;
 }
