@@ -14,7 +14,6 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 #login h1 {
@@ -188,4 +187,15 @@ ruby {
   top: 0;
   bottom: 0;
   top: 0;
+}
+
+@media (max-width: 768px) {
+  #login, #game {
+    transform: translate(-50%, -50%) scale(2);
+  }
+}
+@media (min-width: 768px) {
+  #login, #game {
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
