@@ -129,16 +129,16 @@ ruby {
   font-size: 1.5rem;
   z-index: 99999;
   position: fixed;
-  left: 0;
-  right: 0;
 }
 #link a:first-child {
   text-align: left;
   left: 1.5rem;
+  width: 11ch;
 }
 #link a:nth-child(2) {
   text-align: right;
   right: 1.5rem;
+  width: 7ch;
 }
 
 #settings {
