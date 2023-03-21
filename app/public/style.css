@@ -7,8 +7,6 @@ body {
   background-color: rgb(15, 15, 15);
   color: #ffffff;
   font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
-  width: var(--vvw);
-  height: var(--vvh);
   overflow: hidden;
 }
 
@@ -128,6 +126,8 @@ ruby {
 #title {
   text-align: right;
   margin: 1.5rem 1rem;
+  position: fixed;
+  right: 0;
 }
 
 #link a {
