@@ -122,24 +122,23 @@ ruby {
   right: 0;
 }
 
-#link {
-  position: absolute;
-}
-
 #link a {
   bottom: 1rem;
   color: #3b88f5;
   text-decoration: none;
   font-size: 1.5rem;
   z-index: 99999;
+  position: absolute;
 }
 #link a:first-child {
   text-align: left;
   left: 1.5rem;
+  float: left;
 }
 #link a:nth-child(2) {
   text-align: right;
   right: 1.5rem;
+  float: right;
 }
 
 #settings {
