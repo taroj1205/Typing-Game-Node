@@ -50,6 +50,7 @@ body {
   padding: 0;
   position: fixed;
   transform: translateX(-50%);
+  white-space: nowrap;
 }
 ruby {
   ruby-position: over;
@@ -204,10 +205,10 @@ ruby {
   }
   #def {
     font-size: 20vw;
-    bottom: 3.5vw;
+    bottom: 9.5vw;
   }
   #word_count {
     font-size: 4vw;
-    bottom: -3.75vw;
+    bottom: 2.25vw;
   }
 }

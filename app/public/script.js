@@ -165,9 +165,21 @@ const newWord = (username, response) => {
         termText.innerHTML = term;
         updateFurigana();
     });
-    // Set the width of the #term and #def elements based on the content
-    termText.style.width = `${termText.scrollWidth}px`;
-    defText.style.width = `${defText.scrollWidth}px`;
+
+    const minFontSize = 10; // set a minimum font size for the elements
+    let termFontSize = 70;
+    let defFontSize = 70;
+
+    while (defFontSize > minFontSize && (defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+        defFontSize--;
+        defText.style.fontSize = `${defFontSize}px`;
+    }
+
+    while (termFontSize > minFontSize && (termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
+        termFontSize--;
+        termText.style.fontSize = `${termFontSize}px`;
+    }
+
     typing(num, def, term, username, response);
 }
 
