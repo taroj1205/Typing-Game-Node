@@ -14,10 +14,13 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 #login h1 {
   font-size: 3rem;
+  width: 100%;
+  white-space: nowrap;
 }
 #login label, #login input, #login button {
   font-size: 1rem;
@@ -48,7 +51,6 @@ body {
 #term {
   font-size: 4rem;
   position: fixed;
-  white-space: nowrap;
   bottom: 5rem;
 }
 #def {
@@ -189,15 +191,4 @@ ruby {
   top: 0;
   text-align: center;
   z-index: -99999999;
-}
-
-@media (max-width: 768px) {
-  #login, #game {
-    transform: translate(-50%, -50%) scale(2);
-  }
-}
-@media (min-width: 768px) {
-  #login, #game {
-    transform: translate(-50%, -50%) scale(1);
-  }
 }
