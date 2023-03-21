@@ -188,6 +188,7 @@ ruby {
   bottom: 0;
   top: 0;
   text-align: center;
+  z-index: -99999999;
 }
 
 @media (max-width: 768px) {
