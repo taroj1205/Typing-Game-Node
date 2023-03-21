@@ -8,6 +8,7 @@ body {
   color: #ffffff;
   font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
   overflow: hidden;
+  font-size: 16px;
 }
 
 #login, #game {
@@ -47,19 +48,8 @@ body {
   text-align: center;
   margin: 0;
   padding: 0;
-  white-space: pre;
-}
-#term {
-  font-size: 4rem;
   position: fixed;
-  bottom: 9rem;
-}
-#def {
-  font-size: 7rem;
-  position: relative;
-}
-#word_count {
-  font-size: 2rem;
+  transform: translateX(-50%);
 }
 ruby {
   ruby-position: over;
@@ -190,4 +180,34 @@ ruby {
   top: 0;
   text-align: center;
   z-index: -99999999;
+}
+
+@media (min-width: 768px) {
+  #term {
+    font-size: 5vw;
+    bottom: 5.25vw;
+  }
+  #def {
+    font-size: 10vw;
+    bottom: -3.5vw;
+  }
+  #word_count {
+    font-size: 2vw;
+    bottom: -6.75vw;
+  }
+}
+
+@media (max-width: 768px) {
+  #term {
+    font-size: 10vw;
+    bottom: 27.25vw;
+  }
+  #def {
+    font-size: 20vw;
+    bottom: 3.5vw;
+  }
+  #word_count {
+    font-size: 4vw;
+    bottom: -3.75vw;
+  }
 }

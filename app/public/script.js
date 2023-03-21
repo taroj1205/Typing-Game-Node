@@ -165,6 +165,9 @@ const newWord = (username, response) => {
         termText.innerHTML = term;
         updateFurigana();
     });
+    // Set the width of the #term and #def elements based on the content
+    termText.style.width = `${termText.scrollWidth}px`;
+    defText.style.width = `${defText.scrollWidth}px`;
     typing(num, def, term, username, response);
 }
 
