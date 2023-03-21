@@ -4,8 +4,9 @@
 }
 
 body {
-    background-color: rgb(15, 15, 15);
-    color: #ffffff;
+    <!--background-color: rgb(15, 15, 15);-->
+    background-color: #ffffff;
+    color: #000000;
     font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
     height: 100%;
 }
