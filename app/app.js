@@ -390,6 +390,7 @@ app.get('/profile', async (req, res) => {
                     return `hsl(${hue}, 70%, 60%)`;
                 }
             };
+            
             const colors = data.map(value => gradient(value));
             const barCanvas = `<canvas id="bar-chart" width="1000" height="400"></canvas>`;
             const barScript = `<script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(data.map(() => '#22587d'))} }] }, options: { responsive: false } });</script>`;
