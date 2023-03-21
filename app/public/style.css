@@ -62,8 +62,7 @@ body {
   font-size: 2rem;
 }
 ruby {
-  text-emphasis-style: dot;
-  text-emphasis-position: over;
+  ruby-position: over;
 }
 
 #stats {
