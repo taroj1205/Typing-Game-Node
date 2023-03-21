@@ -166,6 +166,8 @@ const newWord = (username, response) => {
         updateFurigana();
     });
 
+    addWordCountDisplay();
+
     const minFontSize = 10; // set a minimum font size for the elements
     let termFontSize = 70;
     let defFontSize = 120;
