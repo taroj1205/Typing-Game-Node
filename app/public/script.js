@@ -168,7 +168,7 @@ const newWord = (username, response) => {
 
     const minFontSize = 10; // set a minimum font size for the elements
     let termFontSize = 70;
-    let defFontSize = 70;
+    let defFontSize = 120;
 
     while (defFontSize > minFontSize && (defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
         defFontSize--;
