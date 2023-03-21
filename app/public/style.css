@@ -43,27 +43,27 @@ body {
   text-align: center;
 }
 #game p {
-  white-space: nowrap;
   width: var(--vvw);
   text-align: center;
   margin: 0;
+  padding: 0;
+  white-space: pre;
 }
 #term {
   font-size: 4rem;
   position: fixed;
-  bottom: 5rem;
+  bottom: 9rem;
 }
 #def {
   font-size: 7rem;
-  position: fixed;
-  transform: translateY(-50%);
+  position: relative;
 }
 #word_count {
   font-size: 2rem;
-  transform: translateY(170%);
 }
 ruby {
-  ruby-position: over;
+  text-emphasis-style: dot;
+  text-emphasis-position: over;
 }
 
 #stats {

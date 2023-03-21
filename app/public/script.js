@@ -270,13 +270,13 @@ const addLinks = (username, quizlet_id) => {
     linkText.innerHTML = '';
     const leaderboardLink = document.createElement('a');
     leaderboardLink.href = `${address}/leaderboard?quizlet_id=${quizlet_id}`;
-    leaderboardLink.textContent = 'Go to leaderboard';
+    leaderboardLink.textContent = 'Leaderboard';
     leaderboardLink.target = '_blank'; // Open link in a new tab
     linkText.appendChild(leaderboardLink);
 
     const profileLink = document.createElement('a');
     profileLink.href = `${address}/profile/?user=${username}`;
-    profileLink.textContent = 'Go to your profile';
+    profileLink.textContent = 'Profile';
     profileLink.target = '_blank'; // Open link in a new tab
     linkText.appendChild(profileLink);
 };
