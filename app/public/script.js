@@ -170,12 +170,12 @@ const newWord = (username, response) => {
     let termFontSize = 70;
     let defFontSize = 120;
 
-    while (defFontSize > minFontSize && (defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
         defFontSize--;
         defText.style.fontSize = `${defFontSize}px`;
     }
 
-    while (termFontSize > minFontSize && (termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
+    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
         termFontSize--;
         termText.style.fontSize = `${termFontSize}px`;
     }
@@ -308,7 +308,6 @@ const addHistoryDisplay = (term, def) => {
 const addWordCountDisplay = () => {
     const wordCount = historyDIV.querySelector('table tbody').rows.length;
     wordCountText.innerHTML = `Words: ${wordCount}`;
-    updateFurigana();
 }
 
 const furigana = (term, callback) => {
