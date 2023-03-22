@@ -257,6 +257,8 @@ const displayHistory = (response) => {
     let promises = [];
     let historyHTML = '<table><tbody>';
 
+    wordCountText.innerHTML = `Words: ${history.length}`;
+
     for (let i = 0; i < history.length; i++) {
         const term = history[i].term;
         const def = history[i].def;
@@ -269,7 +271,6 @@ const displayHistory = (response) => {
     }
 
     Promise.all(promises).then((results) => {
-        wordCountText.innerHTML = `Words: ${history.length}`;
         historyHTML += results.join('');
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
