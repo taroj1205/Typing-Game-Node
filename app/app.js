@@ -325,7 +325,7 @@ app.get('/leaderboard', (req, res) => {
                                 return `<li><a href="/profile?user=${username}">${username}</a>: ${row.word_count} words</li>`;
                             });
 
-                            let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${row.quizlet_title}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/lb/style.css" /></head><body>`;
+                            let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${row.quizlet_title}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/lb/style.css" /></head><body>`;
 
                             if (rankList.length != 0) {
                                 // Combine the list items into an ordered list
@@ -407,7 +407,7 @@ app.get('/profile', async (req, res) => {
             const lineScript = `<script>new Chart(document.getElementById('line-chart'), { type: 'line', data: { labels: ${JSON.stringify(labelsLine)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(dataLine)}, backgroundColor: '#22587d' }] }, options: { responsive: false, scales: { y: { beginAtZero: true } } } });</script>`;
             res.send(`<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body><h1>${username}'s profile</h1><div id="line">${lineCanvas}</div><div id="bar">${barCanvas}</div><div id="circle">${circleCanvas}</div><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>${lineScript}${barScript}${circleScript}</body></html>`);
         } else {
-            let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
+            let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
             html += `<h1>${username}'s profile</h1>`;
             html += `<p>${username} has not typed any words yet.</p>`;
             res.send(html);
