@@ -335,7 +335,7 @@ app.get('/leaderboard', (req, res) => {
 
                                 const labels = topUsernames;
                                 const data = topWordCounts;
-                                const chartCanvas = `<canvas id="bar-chart" width="400" height="400"></canvas>`;
+                                const chartCanvas = `<canvas id="bar-chart" width="1000" height="400"></canvas>`;
                                 const chartScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)} }] }, options: { responsive: false } });</script>`;
                                 res.write(chartCanvas);
                                 res.write(chartScript);

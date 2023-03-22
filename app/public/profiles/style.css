@@ -4,9 +4,8 @@
 }
 
 body {
-    <!--background-color: rgb(15, 15, 15);-->
-    background-color: #ffffff;
-    color: #000000;
+    background-color: rgb(15, 15, 15);
+    color: #ffffff;
     font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
     height: 100%;
 }
@@ -28,4 +27,9 @@ a {
 
 div {
     margin-bottom: 30px;
+    width: 100%;
+}
+
+canvas {
+    background-color: #ffffff;
 }
