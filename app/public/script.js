@@ -161,12 +161,11 @@ const newWord = (username, response) => {
     defText.textContent = def;
     titleHTML.textContent += ' - ' + response.quizlet_title;
     typingInput.focus();
+    addWordCountDisplay();
     furigana(term, (term) => {
         termText.innerHTML = term;
         updateFurigana();
     });
-
-    addWordCountDisplay();
 
     const minFontSize = 10; // set a minimum font size for the elements
     let termFontSize = 70;
