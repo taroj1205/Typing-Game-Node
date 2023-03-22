@@ -404,7 +404,7 @@ app.get('/profile', async (req, res) => {
             console.log(dataLine);
 
             const lineCanvas = `<canvas id="line-chart" width="1000" height="400"></canvas>`;
-            const lineScript = `<script>new Chart(document.getElementById('line-chart'), { type: 'line', data: { labels: ${JSON.stringify(labelsLine)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(dataLine)}, backgroundColor: '#22587d' }] }, options: { responsive: false, scales: { yAxes: [{ ticks: { beginAtZero: true } }] } } });</script>`;
+            const lineScript = `<script>new Chart(document.getElementById('line-chart'), { type: 'line', data: { labels: ${JSON.stringify(labelsLine)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(dataLine)}, backgroundColor: '#22587d' }] }, options: { responsive: false, scales: { y: { beginAtZero: true } } } });</script>`;
             res.send(`<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body><h1>${username}'s profile</h1><div id="line">${lineCanvas}</div><div id="bar">${barCanvas}</div><div id="circle">${circleCanvas}</div><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>${lineScript}${barScript}${circleScript}</body></html>`);
         } else {
             let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
