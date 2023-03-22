@@ -69,7 +69,8 @@ const setVisualViewport = () => {
 setVisualViewport();
 window.visualViewport.addEventListener('resize', setVisualViewport)
 
-const start = (username, response) => {
+const start = async (username, response) => {
+    await getHistory(username, response);
     loginSection.style.display = 'none';
     gameSection.style.display = 'block';
     statsSection.style.display = 'block';
@@ -77,7 +78,6 @@ const start = (username, response) => {
     gameTitle.textContent = response.quizlet_title;
     quizlet_id = response.quizlet_id;
     addLinks(username, quizlet_id);
-    getHistory(username, response);
     newWord(username, response);
 }
 
@@ -161,7 +161,6 @@ const newWord = (username, response) => {
     defText.textContent = def;
     titleHTML.textContent += ' - ' + response.quizlet_title;
     typingInput.focus();
-    addWordCountDisplay();
     furigana(term, (term) => {
         termText.innerHTML = term;
         updateFurigana();
@@ -231,7 +230,7 @@ const submitTyped = (def, term, username, response) => {
     xhr.send(JSON.stringify(data));
 }
 
-const getHistory = (username, response) => {
+const getHistory = async (username, response) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
     xhr.onload = function() {
@@ -270,15 +269,14 @@ const displayHistory = (response) => {
     }
 
     Promise.all(promises).then((results) => {
+        wordCountText.innerHTML = `Words: ${history.length}`;
         historyHTML += results.join('');
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
-        addWordCountDisplay();
     }).catch((error) => {
         console.error(error);
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
-        addWordCountDisplay();
     });
 }
 
