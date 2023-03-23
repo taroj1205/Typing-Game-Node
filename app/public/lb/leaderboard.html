@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leaderboard - {{quizlet_title}}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <link rel="icon" type="image/x-icon" href="../Files/favicon.ico" />
+  <link rel="stylesheet" type="text/css" href="lb/style.css" />
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta charset="UTF-8" />
+  <meta name="description" content="タイピングゲーム風な形で単語を学習できるサイト。" />
+  <meta name="keywords" content="単語,タイピング,ゲーム" />
+  <meta property="og:title" content="タイピングゲーム風単語学習" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://typing-game.taroj1205.poyo.jp/" />
+  <meta property="og:description" content="タイピングゲーム風な形で単語を学習できるサイトです。" />
+  <meta property="og:site_name" content="タイピングゲーム風単語学習" />
+  <!-- TODO <meta property="og:image" content="" /> -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <!-- TODO <meta name="twitter:image:src" content="" /> -->
+  <meta name="twitter:site" content="@taroj1205">
+  <meta name="twitter:creator" content="@taroj1205">
+  <meta name="subject" content="タイピングゲーム風な形で単語を学習できるサイトです。" />
+  <meta name="author" content="taroj1205" />
+  <meta name="designer" content="taroj1205" />
+</head>
+<body>
+{{#if rankList.length}}
+<h1>Leaderboard - <a href="https://quizlet.com/{{quizlet_id}}">{{quizlet_title}}</a></h1>
+<ol>
+  {{#each rankList}}
+  <li>
+    <a href="/profile?user={{this.username}}">{{this.username}}</a>: {{this.word_count}} words
+  </li>
+  {{/each}}
+</ol>
+<canvas id="bar-chart" width="1000" height="400"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: {{{labels}}}, datasets: [{ label: 'Word Count', data: {{{data}}} }] }, options: { responsive: false } })</script>
+{{else}}
+<h1>Leaderboard</h1>
+<p>No one has typed any words yet!</p>
+{{/if}}
+</body>
+</html>

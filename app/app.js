@@ -4,6 +4,7 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+const handlebars = require('handlebars');
 const app = express();
 const port = process.env.APP_LISTEN_PORT;
 const address = process.env.APP_LISTEN_IP_ADDRRESS;
@@ -286,74 +287,57 @@ app.get('/get/furigana', async (req, res) => {
     }
 });
 
-app.get('/leaderboard', (req, res) => {
+app.get('/leaderboard', async (req, res) => {
     const quizlet_id = req.query.quizlet_id;
     const dataPath = path.join(__dirname, 'data');
     checkAndCreateDir(dataPath);
     const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
 
-    // Retrieve the title from the quizlet table
-    db.get('SELECT quizlet_title FROM quizlet WHERE quizlet_id = ?', [quizlet_id], (err, row) => {
-        if (err) {
-            console.error(err.message);
-            res.status(500).send('Internal server error');
-        } else {
-            // Retrieve all history records with the given Quizlet ID
-            db.all('SELECT user_id, COUNT(*) AS word_count FROM history WHERE quizlet_id = ? GROUP BY user_id ORDER BY word_count DESC', [quizlet_id], (err, rows) => {
-                if (err) {
-                    console.error(err.message);
-                    res.status(500).send('Internal server error');
-                } else {
-                    // Get the usernames for all users in the list
-                    const userIds = rows.map(row => row.user_id);
-                    db.all('SELECT id, username FROM users WHERE id IN (' + userIds.map(() => '?').join(',') + ')', userIds, (err, userRows) => {
-                        if (err) {
-                            console.error(err.message);
-                            res.status(500).send('Internal server error');
-                        } else {
-                            // Get the top 10 users and their word counts
-                            const topRows = rows.slice(0, 10);
-                            const topUsernames = topRows.map(row => {
-                                const userRow = userRows.find(user => user.id === row.user_id);
-                                return userRow.username;
-                            });
-                            const topWordCounts = topRows.map(row => row.word_count);
+    try {
+        const [result] = await queryDb(db, 'SELECT quizlet_title FROM quizlet WHERE quizlet_id = ?', [quizlet_id]);
+        const quizlet_title = result.quizlet_title;
+        const rows = await queryDb(db, 'SELECT user_id, COUNT(*) AS word_count FROM history WHERE quizlet_id = ? GROUP BY user_id ORDER BY word_count DESC', [quizlet_id]);
 
-                            // Map the history rows to HTML list items with usernames and word counts
-                            const rankList = topRows.map((row, index) => {
-                                const username = topUsernames[index];
-                                return `<li><a href="/profile?user=${username}">${username}</a>: ${row.word_count} words</li>`;
-                            });
+        const userIds = rows.map(row => row.user_id);
+        const userRows = await queryDb(db, `SELECT id, username FROM users WHERE id IN (${userIds.map(() => '?').join(',')})`, userIds);
+        const topRows = rows.slice(0, 10);
+        const topUsernames = topRows.map(row => userRows.find(user => user.id === row.user_id).username);
+        const topWordCounts = topRows.map(row => row.word_count);
+        const rankList = topRows.map((row, index) => ({
+            username: topUsernames[index],
+            word_count: row.word_count,
+            profile_url: `/profile?user=${topUsernames[index]}`
+        }));
 
-                            let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${row.quizlet_title}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/lb/style.css" /></head><body>`;
+        const labels = JSON.stringify(topUsernames);
+        const data = JSON.stringify(topWordCounts);
 
-                            if (rankList.length != 0) {
-                                // Combine the list items into an ordered list
-                                html += `<h1>Leaderboard - <a href="https://quizlet.com/${quizlet_id}">${row.quizlet_title}</a></h1><ol>${rankList.join('')}</ol>`;
-                                res.header('Content-Type', 'text/html');
-                                res.write(html);
-
-                                const labels = topUsernames;
-                                const data = topWordCounts;
-                                const chartCanvas = `<canvas id="bar-chart" width="1000" height="400"></canvas>`;
-                                const chartScript = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)} }] }, options: { responsive: false } });</script>`;
-                                res.write(chartCanvas);
-                                res.write(chartScript);
-                                res.write(`</body></html>`);
-                                console.log("Sending ", html);
-                                res.end();
-                            } else {
-                                html += `<h1>Leaderboard</h1><p>No one has typed any words yet!</p>`;
-                                console.log("Sending ", html);
-                                res.header('Content-Type', 'text/html');
-                                res.send(`${html}</body></html>`);
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    });
+        const templatePath = path.join(__dirname, 'public', 'lb', 'leaderboard.html')
+        const templateSource = fs.readFileSync(templatePath, 'utf8');
+        const template = handlebars.compile(templateSource);
+        const html = template({
+            quizlet_title,
+            quizlet_id,
+            rankList,
+            labels,
+            data,
+        });
+        console.log(quizlet_title);
+        console.log(rankList);
+        console.log(labels);
+        console.log(data);
+        res.header('Content-Type', 'text/html');
+        res.send(html);
+    } catch (err) {
+        console.error(err.message);
+        let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${quizlet_id}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/lb/style.css" /></head><body>`;
+        html += `<h1>Leaderboard - ${quizlet_id}</h1><p>No one has typed any words yet!</p>`;
+        console.log("Sending ", html);
+        res.header('Content-Type', 'text/html');
+        res.send(`${html}</body></html>`);
+    } finally {
+        db.close();
+    }
 });
 
 app.get('/profile', async (req, res) => {
@@ -365,56 +349,51 @@ app.get('/profile', async (req, res) => {
     try {
         const result = await getDataProfile(username, db);
 
-        const count_per_day = await getWordCountPerDay(username, db);
+        if (result.length !== 0) {
+            const count_per_day = await getWordCountPerDay(username, db);
+            const labelsLine = count_per_day.map(item => item.day);
+            const dataLine = count_per_day.map(item => item.count_on_the_day);
 
-        console.log(username);
+            const labels = JSON.stringify(result.labels);
+            const data = JSON.stringify(result.data);
 
-        if (result.length != 0) {
+            const minValue = Math.min(...result.data);
+            const maxValue = Math.max(...result.data);
 
-            const labels = result.labels;
-            const data = result.data;
-
-            const minValue = Math.min(...data);
-            const maxValue = Math.max(...data);
-            const gradient = (value) => {
+            const gradient = value => {
                 if (maxValue === minValue) {
-                    // Use the first color that would be generated if there were more data points
                     const hue = (200 - 0.5 * 200).toString(10);
                     return `hsl(${hue}, 70%, 60%)`;
                 } else {
-                    // Calculate a value between 0 and 1 based on the position of the value between the min and max values
                     const position = (value - minValue) / (maxValue - minValue);
-                    // Calculate a hue value between 200 (dark blue) and 0 (light pink)
                     const hue = (200 - position * 200).toString(10);
-                    // Return a hsl color with 70% saturation and 60% lightness
                     return `hsl(${hue}, 70%, 60%)`;
                 }
             };
 
-            const colors = data.map(value => gradient(value));
-            const barCanvas = `<canvas id="bar-chart" width="1000" height="400"></canvas>`;
-            const barScript = `<script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(data.map(() => '#22587d'))} }] }, options: { responsive: false } });</script>`;
-            const circleCanvas = `<canvas id="circle-chart" width="400" height="400"></canvas>`;
-            const circleScript = `<script>new Chart(document.getElementById('circle-chart'), { type: 'doughnut', data: { labels: ${JSON.stringify(labels)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(data)}, backgroundColor: ${JSON.stringify(colors)} }] }, options: { responsive: false } });</script>`;
+            const colors = JSON.stringify(result.data.map(value => gradient(value)));
+            const background = JSON.stringify(result.data.map(() => '#22587d'));
 
-            const labelsLine = count_per_day.map((item) => item.day);
-            const dataLine = count_per_day.map((item) => item.count_on_the_day);
-
-            console.log(labelsLine);
-            console.log(dataLine);
-
-            const lineCanvas = `<canvas id="line-chart" width="1000" height="400"></canvas>`;
-            const lineScript = `<script>new Chart(document.getElementById('line-chart'), { type: 'line', data: { labels: ${JSON.stringify(labelsLine)}, datasets: [{ label: 'Word Count', data: ${JSON.stringify(dataLine)}, backgroundColor: '#22587d' }] }, options: { responsive: false, scales: { y: { beginAtZero: true } } } });</script>`;
-            res.send(`<!DOCTYPE html><html><head><title>Profile - ${username}</title><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body><h1>${username}'s profile</h1><div id="line">${lineCanvas}</div><div id="bar">${barCanvas}</div><div id="circle">${circleCanvas}</div><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>${lineScript}${barScript}${circleScript}</body></html>`);
-        } else {
-            let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
-            html += `<h1>${username}'s profile</h1>`;
-            html += `<p>${username} has not typed any words yet.</p>`;
+            const templatePath = path.join(path.join(__dirname, 'public', 'profiles', 'profile.html'))
+            const templateSource = fs.readFileSync(templatePath, 'utf8');
+            const template = handlebars.compile(templateSource);
+            const html = template({
+                username,
+                labelsLine,
+                dataLine,
+                labels,
+                data,
+                colors,
+                background,
+            });
+            res.header('Content-Type', 'text/html');
             res.send(html);
         }
     } catch (err) {
-        console.error(err);
-        res.status(500).send('An error occurred');
+        let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/profiles/style.css" /></head><body>`;
+        html += `<h1>${username}'s profile</h1>`;
+        html += `<p>${username} has not typed any words yet.</p>`;
+        res.send(html);
     }
 });
 
@@ -438,16 +417,27 @@ async function getWordCountPerDay(username, db) {
 
 async function getDataProfile(username, db) {
     return new Promise((resolve, reject) => {
-        db.all('SELECT quizlet.quizlet_id, quizlet.quizlet_title, COUNT(*) AS word_count FROM history JOIN quizlet ON history.quizlet_id = quizlet.quizlet_id JOIN users ON history.user_id = users.id WHERE users.username = ? GROUP BY quizlet.quizlet_id, quizlet.quizlet_title', [username], (err, rows) => {
+        db.get('SELECT COUNT(*) AS count FROM users WHERE username = ?', [username], (err, row) => {
             if (err) {
                 console.error(err.message);
                 reject(err);
+            } else if (row.count === 0) {
+                const err = new Error(`User ${username} does not exist.`);
+                console.error(err.message);
+                reject(err);
             } else {
-                const sortedRows = rows.sort((a, b) => b.word_count - a.word_count);
-                const labels = sortedRows.map(row => `${row.quizlet_title} - ${row.quizlet_id}`);
-                const data = sortedRows.map(row => row.word_count);
-                const result = { labels, data };
-                resolve(result);
+                db.all('SELECT quizlet.quizlet_id, quizlet.quizlet_title, COUNT(*) AS word_count FROM history JOIN quizlet ON history.quizlet_id = quizlet.quizlet_id JOIN users ON history.user_id = users.id WHERE users.username = ? GROUP BY quizlet.quizlet_id, quizlet.quizlet_title', [username], (err, rows) => {
+                    if (err) {
+                        console.error(err.message);
+                        reject(err);
+                    } else {
+                        const sortedRows = rows.sort((a, b) => b.word_count - a.word_count);
+                        const labels = sortedRows.map(row => `${row.quizlet_title} - ${row.quizlet_id}`);
+                        const data = sortedRows.map(row => row.word_count);
+                        const result = {labels, data};
+                        resolve(result);
+                    }
+                });
             }
         });
     });
@@ -483,6 +473,15 @@ async function getQuizletDetails(id) {
         termLang: set.wordLang,
         defLang: set.defLang
     };
+}
+
+async function queryDb(db, sql, params) {
+    return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
 }
 
 app.listen(port, address, () => {
