@@ -15,7 +15,6 @@
     <canvas id="circle-chart" width="400" height="400"></canvas>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: {{{labels}}}, datasets: [{ label: 'Word Count', data: {{{data}}}, backgroundColor: {{{background}}} }] }, options: { responsive: false } });</script>
 <script>new Chart(document.getElementById('circle-chart'), { type: 'doughnut', data: { labels: {{{labels}}}, datasets: [{ label: 'Word Count', data: {{{data}}}, backgroundColor: {{{colors}}} }] }, options: { responsive: false } });</script>
 <script>new Chart(document.getElementById('line-chart'), { type: 'line', data: { labels: [{{{labelsLine}}}], datasets: [{ label: 'Word Count', data: [{{{dataLine}}}], backgroundColor: '#22587d' }] }, options: { responsive: false, scales: { y: { beginAtZero: true } } } });</script>
