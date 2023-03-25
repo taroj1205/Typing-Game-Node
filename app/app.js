@@ -8,7 +8,6 @@ const handlebars = require('handlebars');
 const app = express();
 const port = process.env.APP_LISTEN_PORT;
 const address = process.env.APP_LISTEN_IP_ADDRRESS;
-const Chart = require('chart.js');
 const Kuroshiro = require('kuroshiro').default;
 const KuromojiAnalyzer = require('kuroshiro-analyzer-kuromoji');
 const kuroshiro = new Kuroshiro();
