@@ -24,7 +24,7 @@ const hostname = window.location.hostname; // Get the hostname of the current pa
 const port = 8000; // Set the port number for your server
 const protocol = window.location.protocol; // Get the protocol (http or https) of the current page
 
-const address = `${protocol}//${hostname}:${port}`; // Build the URL for your server
+const address = ''; // = `${protocol}//${hostname}:${port}`; // Build the URL for your server
 
 window.onload = () => {
     loginSection.style.display = 'block';
@@ -55,11 +55,22 @@ const setVisualViewport = () => {
     const root = document.documentElement;
     root.style.setProperty('--vvw', `${vv.width}px`);
     root.style.setProperty('--vvh', `${vv.height}px`);
+
+    const linkHeight = linkText.clientHeight;
+    const windowHeight = vv.height;
+    const keyboardHeight = windowHeight - vv.innerHeight;
+
+    if (keyboardHeight > 0) {
+        linkText.style.bottom = `${keyboardHeight + linkHeight}px`;
+    } else {
+        linkText.style.bottom = `1rem`;
+    }
 }
-setVisualViewport()
+setVisualViewport();
 window.visualViewport.addEventListener('resize', setVisualViewport)
 
-const start = (username, response) => {
+const start = async (username, response) => {
+    await getHistory(username, response);
     loginSection.style.display = 'none';
     gameSection.style.display = 'block';
     statsSection.style.display = 'block';
@@ -67,7 +78,6 @@ const start = (username, response) => {
     gameTitle.textContent = response.quizlet_title;
     quizlet_id = response.quizlet_id;
     addLinks(username, quizlet_id);
-    getHistory(username, response);
     newWord(username, response);
 }
 
@@ -155,6 +165,21 @@ const newWord = (username, response) => {
         termText.innerHTML = term;
         updateFurigana();
     });
+
+    const minFontSize = 10; // set a minimum font size for the elements
+    let termFontSize = 70;
+    let defFontSize = 120;
+
+    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+        defFontSize--;
+        defText.style.fontSize = `${defFontSize}px`;
+    }
+
+    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
+        termFontSize--;
+        termText.style.fontSize = `${termFontSize}px`;
+    }
+
     typing(num, def, term, username, response);
 }
 
@@ -168,6 +193,8 @@ const typing = (num, def, term, username, response) => {
             const notYet = "<span style='color: #1fd755;' id='notYet'>" + def.substring(num) + "</span>";
             document.querySelector("#def").innerHTML = typedOut + notYet;
             if (num >= def.length) {
+                const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
+                wordCountText.innerHTML = `Words: ${wordCount+1}`;
                 submitTyped(def, term, username, response);
                 newWord(username, response);
             }
@@ -203,7 +230,7 @@ const submitTyped = (def, term, username, response) => {
     xhr.send(JSON.stringify(data));
 }
 
-const getHistory = (username, response) => {
+const getHistory = async (username, response) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
     xhr.onload = function() {
@@ -230,6 +257,8 @@ const displayHistory = (response) => {
     let promises = [];
     let historyHTML = '<table><tbody>';
 
+    wordCountText.innerHTML = `Words: ${history.length}`;
+
     for (let i = 0; i < history.length; i++) {
         const term = history[i].term;
         const def = history[i].def;
@@ -245,12 +274,10 @@ const displayHistory = (response) => {
         historyHTML += results.join('');
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
-        addWordCountDisplay();
     }).catch((error) => {
         console.error(error);
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
-        addWordCountDisplay();
     });
 }
 
@@ -258,13 +285,13 @@ const addLinks = (username, quizlet_id) => {
     linkText.innerHTML = '';
     const leaderboardLink = document.createElement('a');
     leaderboardLink.href = `${address}/leaderboard?quizlet_id=${quizlet_id}`;
-    leaderboardLink.textContent = 'Go to leaderboard';
+    leaderboardLink.textContent = 'Leaderboard';
     leaderboardLink.target = '_blank'; // Open link in a new tab
     linkText.appendChild(leaderboardLink);
 
     const profileLink = document.createElement('a');
     profileLink.href = `${address}/profile/?user=${username}`;
-    profileLink.textContent = 'Go to your profile';
+    profileLink.textContent = 'Profile';
     profileLink.target = '_blank'; // Open link in a new tab
     linkText.appendChild(profileLink);
 };
@@ -281,7 +308,6 @@ const addHistoryDisplay = (term, def) => {
 const addWordCountDisplay = () => {
     const wordCount = historyDIV.querySelector('table tbody').rows.length;
     wordCountText.innerHTML = `Words: ${wordCount}`;
-    updateFurigana();
 }
 
 const furigana = (term, callback) => {

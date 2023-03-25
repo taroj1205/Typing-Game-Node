@@ -7,24 +7,13 @@ body {
     background-color: rgb(15, 15, 15);
     color: #ffffff;
     font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
-    height: 100%;
+    width: 90vw;
+    height: 100vh;
 }
-
-#bar, #circle {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-h1 {
-    display: block;
-    text-align: center;
-}
-
 a {
     color: #3b88f5;
 }
 
-div#bar {
-    margin-bottom: 30px;
+canvas {
+    background-color: #ffffff;
 }

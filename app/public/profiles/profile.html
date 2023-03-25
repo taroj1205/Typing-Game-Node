@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>Profile - {{username}}</title>
+    <link rel="icon" type="image/x-icon" href="/Files/favicon.ico"/>
+    <link rel="stylesheet" type="text/css" href="/profiles/style.css"/>
+</head>
+<body><h1>{{username}}'s profile</h1>
+<div id="line">
+    <canvas id="line-chart" width="1000" height="400"></canvas>
+</div>
+<div id="bar">
+    <canvas id="bar-chart" width="1000" height="400"></canvas>
+</div>
+<div id="circle">
+    <canvas id="circle-chart" width="400" height="400"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: {{{labels}}}, datasets: [{ label: 'Word Count', data: {{{data}}}, backgroundColor: {{{background}}} }] }, options: { responsive: false } });</script>
+<script>new Chart(document.getElementById('circle-chart'), { type: 'doughnut', data: { labels: {{{labels}}}, datasets: [{ label: 'Word Count', data: {{{data}}}, backgroundColor: {{{colors}}} }] }, options: { responsive: false } });</script>
+<script>new Chart(document.getElementById('line-chart'), { type: 'line', data: { labels: [{{{labelsLine}}}], datasets: [{ label: 'Word Count', data: [{{{dataLine}}}], backgroundColor: '#22587d' }] }, options: { responsive: false, scales: { y: { beginAtZero: true } } } });</script>
+</body>
+</html>

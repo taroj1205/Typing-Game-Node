@@ -7,9 +7,9 @@ body {
   background-color: rgb(15, 15, 15);
   color: #ffffff;
   font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
-  width: var(--vvw);
-  height: var(--vvh);
   overflow: hidden;
+  font-size: 16px;
+  height: var(--vvh);
 }
 
 #login, #game {
@@ -21,6 +21,8 @@ body {
 
 #login h1 {
   font-size: 3rem;
+  width: 100%;
+  white-space: nowrap;
 }
 #login label, #login input, #login button {
   font-size: 1rem;
@@ -43,25 +45,16 @@ body {
   text-align: center;
 }
 #game p {
-  white-space: nowrap;
   width: var(--vvw);
   text-align: center;
   margin: 0;
-}
-#term {
-  font-size: 4rem;
+  padding: 0;
   position: fixed;
+  transform: translateX(-50%);
   white-space: nowrap;
-  bottom: 5rem;
 }
-#def {
-  font-size: 7rem;
-  position: fixed;
-  transform: translateY(-50%);
-}
-#word_count {
-  font-size: 2rem;
-  transform: translateY(170%);
+ruby {
+  ruby-position: over;
 }
 
 #stats {
@@ -124,24 +117,28 @@ body {
 
 #title {
   text-align: right;
-  margin: 1.5rem 1rem;
+  margin: 1rem;
+  position: fixed;
+  right: 0;
 }
 
 #link a {
-  position: absolute;
   bottom: 1rem;
   color: #3b88f5;
   text-decoration: none;
   font-size: 1.5rem;
   z-index: 99999;
+  position: fixed;
 }
 #link a:first-child {
   text-align: left;
   left: 1.5rem;
+  width: 11ch;
 }
 #link a:nth-child(2) {
   text-align: right;
   right: 1.5rem;
+  width: 7ch;
 }
 
 #settings {
@@ -173,4 +170,48 @@ body {
 }
 #settings td:nth-child(2) {
   cursor: pointer;
+}
+
+#typingInput {
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  top: 0;
+  text-align: center;
+  z-index: -99999999;
+}
+
+@media (min-width: 768px) {
+  #term {
+    font-size: 5vw;
+    bottom: 5.25vw;
+  }
+  #def {
+    font-size: 10vw;
+    bottom: -3.5vw;
+  }
+  #word_count {
+    font-size: 2vw;
+    bottom: -6.75vw;
+  }
+}
+
+@media (max-width: 768px) {
+  #term {
+    font-size: 10vw;
+    bottom: 27.25vw;
+  }
+  #def {
+    font-size: 20vw;
+    bottom: 9.5vw;
+  }
+  #word_count {
+    font-size: 4vw;
+    bottom: 2.25vw;
+  }
 }
