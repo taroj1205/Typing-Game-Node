@@ -21,6 +21,33 @@ quizletLinkSettings = document.getElementById("quizletLinkSettings");
 submitQuizletButton = document.getElementById("submitQuizlet");
 
 const address = '';
+class Playtime {
+    constructor() {
+        this.data = [];
+    }
+
+    start() {
+        const nzTime = Date.now();
+        this.data.push({startTime: nzTime});
+    }
+
+    stop() {
+        const nzTime = Date.now();
+        if (this.data.length > 0) {
+            this.data[this.data.length - 1].stopTime = nzTime;
+        }
+    }
+
+    get() {
+        return [...this.data];
+    }
+
+    reset() {
+        this.data = [];
+    }
+}
+
+const playtime = new Playtime();
 
 window.onload = () => {
     loginSection.style.display = 'block';
@@ -65,7 +92,7 @@ const setVisualViewport = () => {
 setVisualViewport();
 window.visualViewport.addEventListener('resize', setVisualViewport)
 
-const start = async (username, response) => {
+const startGame = async (username, response) => {
     await getHistory(username, response);
     loginSection.style.display = 'none';
     gameSection.style.display = 'block';
@@ -123,7 +150,7 @@ const getWords = (username) => {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
-            start(username, response);
+            startGame(username, response);
             submitButton.disabled = false;
         } else if (xhr.status === 400) {
             console.error(xhr.statusText);
@@ -345,10 +372,12 @@ menuToggle.addEventListener("click", function() {
     if (menuToggle.textContent === "\u2630") {
         typingInput.style.display = "none";
         menuToggle.textContent = "\u2716";
+        stop();
     } else {
         document.body.appendChild(typingInput);
         typingInput.style.display = "block";
         menuToggle.textContent = "\u2630";
+        start();
     }
 
     quizletLinkSettings.value = localStorage.getItem('quizlet');
@@ -452,4 +481,58 @@ const getNewQuizletData = () => {
     }
 }
 
+const sendPlaytime = () => {
+    playtime.stop();
+    const username = usernameInput.value;
+    const playtimeInMilliseconds = calculatePlaytimeInMilliseconds();
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${address}/post/playtime`);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const response = xhr.responseText;
+            playtime.reset();
+            playtime.start();
+            console.log(response);
+        } else {
+            console.error(xhr.statusText);
+            console.error('Request failed.');
+        }
+    };
+    xhr.onerror = function () {
+        console.error(xhr.statusText);
+        console.error('Request failed.');
+    };
+    xhr.send(JSON.stringify({
+        username: username,
+        playtime: playtimeInMilliseconds,
+    }));
+}
+
+const calculatePlaytimeInMilliseconds = () => {
+    let totalTime = 0;
+    const items = playtime.get();
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const startTime = new Date(item.startTime);
+        const stopTime = new Date(item.stopTime);
+        const playtimeInMilliseconds = stopTime - startTime;
+        totalTime += playtimeInMilliseconds;
+    }
+    console.log(totalTime);
+    return totalTime;
+};
+
+window.addEventListener('blur', () => {
+    playtime.stop();
+});
+
+window.addEventListener('focus', () => {
+    playtime.start();
+});
+
 toggleFurigana.addEventListener("click", furiganaSetting);
+
+window.onbeforeunload = function () {
+    sendPlaytime();
+}
