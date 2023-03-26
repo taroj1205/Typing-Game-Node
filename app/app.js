@@ -350,7 +350,8 @@ app.get('/profile', async (req, res) => {
 
         if (result.length !== 0) {
             const count_per_day = await getWordCountPerDay(username, db);
-            const labelsLine = count_per_day.map(item => item.day);
+            const labelsLine = JSON.stringify(count_per_day.map(item => item.day));
+            console.log(labelsLine);
             const dataLine = count_per_day.map(item => item.count_on_the_day);
 
             const labels = JSON.stringify(result.labels);
