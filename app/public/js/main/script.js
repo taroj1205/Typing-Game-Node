@@ -333,6 +333,7 @@ const addHistoryDisplay = (term, def) => {
 const addWordCountDisplay = () => {
     const wordCount = historyDIV.querySelector('table tbody').rows.length;
     wordCountText.innerHTML = `Words: ${wordCount}`;
+    updateFurigana();
 }
 
 const furigana = (term, callback) => {
