@@ -13,17 +13,16 @@ const KuromojiAnalyzer = require('kuroshiro-analyzer-kuromoji');
 const kuroshiro = new Kuroshiro();
 kuroshiro.init(new KuromojiAnalyzer());
 
-app.use(express.json());
-app.use((req, res, next) => {
+app.use(express.json(), (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
     next();
 });
 
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.resolve(__dirname)));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'html', 'main', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'html', 'main', 'index.html'));
 });
 
 app.post('/login', async (req, res) => {
@@ -312,7 +311,7 @@ app.get('/leaderboard', async (req, res) => {
         const labels = JSON.stringify(topUsernames);
         const data = JSON.stringify(topWordCounts);
 
-        const templatePath = path.join(__dirname, 'html', 'leaderboard', 'index.html')
+        const templatePath = path.join(__dirname, 'public', 'html', 'leaderboard', 'index.html')
         const templateSource = fs.readFileSync(templatePath, 'utf8');
         const template = handlebars.compile(templateSource);
         const html = template({
@@ -330,7 +329,7 @@ app.get('/leaderboard', async (req, res) => {
         res.send(html);
     } catch (err) {
         console.error(err.message);
-        let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${quizlet_id}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/app/css/lb/style.css" /></head><body>`;
+        let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${quizlet_id}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/lb/style.css" /></head><body>`;
         html += `<h1>Leaderboard - ${quizlet_id}</h1><p>No one has typed any words yet!</p>`;
         console.log("Sending ", html);
         res.header('Content-Type', 'text/html');
@@ -374,7 +373,7 @@ app.get('/profile', async (req, res) => {
             const colors = JSON.stringify(result.data.map(value => gradient(value)));
             const background = JSON.stringify(result.data.map(() => '#22587d'));
 
-            const templatePath = path.join(path.join(__dirname, 'html', 'profile', 'index.html'))
+            const templatePath = path.join(path.join(__dirname, 'public', 'html', 'profile', 'index.html'))
             const templateSource = fs.readFileSync(templatePath, 'utf8');
             const template = handlebars.compile(templateSource);
             const html = template({
@@ -390,7 +389,7 @@ app.get('/profile', async (req, res) => {
             res.send(html);
         }
     } catch (err) {
-        let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/app/css/profiles/style.css" /></head><body>`;
+        let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/profiles/style.css" /></head><body>`;
         html += `<h1>${username}'s profile</h1>`;
         html += `<p>${username} has not typed any words yet.</p>`;
         res.send(html);

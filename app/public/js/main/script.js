@@ -274,12 +274,10 @@ const displayHistory = (response) => {
         historyHTML += results.join('');
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
-        updateFurigana()
     }).catch((error) => {
         console.error(error);
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
-        updateFurigana()
     });
 }
 
@@ -304,7 +302,6 @@ const addHistoryDisplay = (term, def) => {
         newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
         historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
         addWordCountDisplay();
-        updateFurigana();
     });
 }
 
