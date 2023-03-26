@@ -13,6 +13,9 @@ const KuromojiAnalyzer = require('kuroshiro-analyzer-kuromoji');
 const kuroshiro = new Kuroshiro();
 kuroshiro.init(new KuromojiAnalyzer());
 
+const dataPath = path.join(__dirname, 'data');
+const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
+
 app.use(express.json(), (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -29,9 +32,7 @@ app.post('/login', async (req, res) => {
     let { username, password } = req.body;
     username = username.trim();
     console.log(username, password);
-    const dataPath = path.join(__dirname, 'data');
-    checkAndCreateDir(dataPath);
-    const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
+    checkAndCreateDir();
 
     db.serialize(() => {
         db.run(`
@@ -121,8 +122,7 @@ app.get('/get/quizlet', async (req, res) => {
     let title = null;
 
     try {
-        const dataPath = path.join(__dirname, 'data');
-        checkAndCreateDir(dataPath);
+        checkAndCreateDir();
         const terms = await quizlet(quizlet_id);
         let term = [];
         let def = [];
@@ -134,7 +134,6 @@ app.get('/get/quizlet', async (req, res) => {
 
         const { quizlet_title, termLang, defLang } = await getQuizletDetails(quizlet_id);
 
-        const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
         db.serialize(() => {
             db.run(`CREATE TABLE IF NOT EXISTS quizlet
             (
@@ -178,7 +177,7 @@ app.get('/get/quizlet', async (req, res) => {
     }
 });
 
-function checkAndCreateDir(dataPath) {
+function checkAndCreateDir() {
     // Check if directory exists
     if (fs.existsSync(dataPath)) {
         console.log(`Directory already exists at ${dataPath}`);
@@ -191,9 +190,7 @@ function checkAndCreateDir(dataPath) {
 
 app.post('/post/typed', (req, res) => {
     const { def, term, username, quizlet_id } = req.body;
-    const dataPath = path.join(__dirname, 'data');
-    checkAndCreateDir(dataPath);
-    const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
+    checkAndCreateDir();
     db.serialize(() => {
         db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
             if (err) {
@@ -237,9 +234,7 @@ app.post('/post/typed', (req, res) => {
 app.get('/get/history', async (req, res) => {
     const { username, quizlet_id } = req.query;
     console.log(username, quizlet_id);
-    const dataPath = path.join(__dirname, 'data');
-    checkAndCreateDir(dataPath);
-    const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
+    checkAndCreateDir();
     db.serialize(() => {
         db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, created_at TEXT)');
     });
@@ -288,10 +283,7 @@ app.get('/get/furigana', async (req, res) => {
 
 app.get('/leaderboard', async (req, res) => {
     const quizlet_id = req.query.quizlet_id;
-    const dataPath = path.join(__dirname, 'data');
-    checkAndCreateDir(dataPath);
-    const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
-
+    checkAndCreateDir();
     try {
         const [result] = await queryDb(db, 'SELECT quizlet_title FROM quizlet WHERE quizlet_id = ?', [quizlet_id]);
         const quizlet_title = result.quizlet_title;
@@ -341,10 +333,7 @@ app.get('/leaderboard', async (req, res) => {
 
 app.get('/profile', async (req, res) => {
     const username = req.query.user;
-    const dataPath = path.join(__dirname, 'data');
-    checkAndCreateDir(dataPath);
-    const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
-
+    checkAndCreateDir();
     try {
         const result = await getDataProfile(username, db);
 
@@ -374,6 +363,17 @@ app.get('/profile', async (req, res) => {
             const colors = JSON.stringify(result.data.map(value => gradient(value)));
             const background = JSON.stringify(result.data.map(() => '#22587d'));
 
+            const playtimeMS = await getPlaytime(username, db);
+
+            let playtime;
+            await formatDuration(playtimeMS)
+                .then((formattedTime) => {
+                    playtime = formattedTime;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+            console.log(playtime);
             const templatePath = path.join(path.join(__dirname, 'public', 'html', 'profile', 'index.html'))
             const templateSource = fs.readFileSync(templatePath, 'utf8');
             const template = handlebars.compile(templateSource);
@@ -385,6 +385,7 @@ app.get('/profile', async (req, res) => {
                 data,
                 colors,
                 background,
+                playtime,
             });
             res.header('Content-Type', 'text/html');
             res.send(html);
@@ -396,6 +397,14 @@ app.get('/profile', async (req, res) => {
         res.send(html);
     }
 });
+
+async function getPlaytime(username, db) {
+    const user = (await queryDb(db, `SELECT id FROM users WHERE username = ?`, [username]))[0];
+    if (!user) return 0;
+    const row = (await queryDb(db, `SELECT playtime FROM playtime WHERE user_id = ?`, [user.id]))[0];
+    if (!row) return 0;
+    return row.playtime;
+}
 
 async function getWordCountPerDay(username, db) {
     return new Promise((resolve, reject) => {
@@ -443,6 +452,45 @@ async function getDataProfile(username, db) {
     });
 }
 
+app.post('/post/playtime', async (req, res) => {
+    const { username, playtime } = req.body;
+
+    console.log(username);
+    console.log(playtime);
+
+    try {
+        await queryDb(db, `
+      CREATE TABLE IF NOT EXISTS playtime (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL DEFAULT 0,
+        playtime INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+
+        const user = await queryDb(db, `SELECT id FROM users WHERE username = ?`, [username]);
+
+        if (!user || user.length === 0) {
+            res.status(404).send('User not found');
+            return;
+        }
+
+        const row = await queryDb(db, `SELECT playtime FROM playtime WHERE user_id = ?`, [user[0].id]);
+
+        if (row && row.length > 0) {
+            const existingPlaytime = row[0].playtime;
+            const updatedPlaytime = existingPlaytime + playtime;
+            await queryDb(db, `UPDATE playtime SET playtime = ? WHERE user_id = ?`, [updatedPlaytime, user[0].id]);
+            res.send(`Playtime updated for ${username}`);
+        } else {
+            await queryDb(db, `INSERT INTO playtime (user_id, playtime) VALUES (?, ?)`, [user[0].id, playtime]);
+            res.send(`Playtime inserted for ${username}`);
+        }
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Internal server error');
+    }
+});
+
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
@@ -483,6 +531,25 @@ async function queryDb(db, sql, params) {
         });
     });
 }
+
+async function formatDuration(durationInMs) {
+    const seconds = Math.floor(durationInMs / 1000);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    const parts = [];
+    if (hours > 0) {
+        parts.push(`${hours} hour${hours === 1 ? '' : 's'}`);
+    }
+    if (minutes > 0) {
+        parts.push(`${minutes} minute${minutes === 1 ? '' : 's'}`);
+    }
+    if (remainingSeconds > 0 || parts.length === 0) {
+        parts.push(`${remainingSeconds} second${remainingSeconds === 1 ? '' : 's'}`);
+    }
+    return parts.join(' ');
+}
+
 
 app.listen(port, address, () => {
     console.log(`Server listening on http://${address}:${port}`);
