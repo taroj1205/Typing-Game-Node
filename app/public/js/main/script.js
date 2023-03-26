@@ -274,10 +274,12 @@ const displayHistory = (response) => {
         historyHTML += results.join('');
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
+        updateFurigana();
     }).catch((error) => {
         console.error(error);
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
+        updateFurigana();
     });
 }
 
