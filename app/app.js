@@ -8,6 +8,7 @@ const handlebars = require('handlebars');
 const winston = require('winston');
 const moment = require('moment-timezone');
 const StackTrace = require('stacktrace-js');
+const uuid = require('uuid');
 const app = express();
 const port = process.env.APP_LISTEN_PORT;
 const address = process.env.APP_LISTEN_IP_ADDRRESS;
@@ -32,6 +33,91 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'html', 'main', 'index.html'));
 });
 
+function getTimestamp() {
+    const now = new Date();
+    const options = {
+        timeZone: 'Pacific/Auckland',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    };
+    return now.toLocaleString('ja-JP', options).replace(/\//g, '-');
+}
+
+async function generateAuthToken(db, username) {
+    const timeNow = getTimestamp();
+    const timeZone = 'Pacific/Auckland';
+    const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const options = {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    };
+    const expirationDate = date.toLocaleString('en-US', options).replace(',', '');
+    console.log(timeNow); // Output: "2023-03-29 08:15:30"
+
+    // check if the generated token already exists in the database
+    let authToken = await getUniqueAuthToken(db);
+
+    await queryDb(db, `UPDATE users SET auth_token = ?, auth_token_expiration = ?, last_login_at = ? WHERE username = ?`, [authToken, expirationDate, timeNow, username]);
+    console.log("Generated auth token.");
+    await logMessage('Generating auth token...', 'info');
+    try {
+        const result = 1 / 0;
+    } catch (error) {
+        await logMessage(error.message, 'error');
+    }
+    return { authToken, expirationDate };
+}
+
+async function getUniqueAuthToken(db) {
+    const authToken = uuid.v4();
+    const rows = await queryDb(db, `SELECT auth_token FROM users WHERE auth_token = ?`, [authToken]);
+    if (rows.length > 0) {
+        return getUniqueAuthToken(db);
+    } else {
+        return authToken;
+    }
+    await logMessage('Generating auth token...', 'info');
+}
+
+async function authenticateUser(db, authToken) {
+    try {
+        const rows = await queryDb(db, `SELECT username FROM users WHERE auth_token = ?`, [authToken]);
+        const username = rows[0].username;
+        const timeNow = getTimestamp();
+        console.log(timeNow);
+        await queryDb(db, `UPDATE users SET last_login_at = ? WHERE username = ?`, [ timeNow, username]);
+        console.log(`User ${username} authenticated successfully.`);
+        return username;
+    } catch (err) {
+        console.log('Authentication failed: invalid or expired token.');
+        return null;
+    }
+    await logMessage('Authenticating user token...', 'info');
+}
+
+app.post('/auth', async (req, res) => {
+    const authToken = req.body.auth_token;
+    console.log(authToken);
+    const username = await authenticateUser(db, authToken);
+    if (username) {
+        res.json({ success: true, message: 'Authentication successful', username: username });
+    } else {
+        res.status(401).json({ success: false, message: 'Authentication failed' });
+    }
+
+});
+
 app.post('/login', async (req, res) => {
     let { username, password } = req.body;
     username = username.trim();
@@ -40,14 +126,16 @@ app.post('/login', async (req, res) => {
 
     db.serialize(() => {
         db.run(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        username TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime')),
-        last_login_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
-      )
-    `);
+            CREATE TABLE IF NOT EXISTS users (
+               id INTEGER PRIMARY KEY,
+               username TEXT NOT NULL,
+               password TEXT NOT NULL,
+               created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+               auth_token TEXT DEFAULT NULL,
+               auth_token_expiration TEXT DEFAULT NULL,
+               last_login_at TEXT DEFAULT NULL
+            );
+        `);
         logMessage('Creating users table...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     });
 
@@ -55,7 +143,11 @@ app.post('/login', async (req, res) => {
         let user = await findUser(db, username);
 
         await validateCredentials(db, user, username, password);
-        return res.json({success: true});
+
+        // Generate an authentication token and send it to the client in a cookie
+        const { authToken, expiration_date } = await generateAuthToken(db, username);
+
+        return res.json({ success: true, auth_token: authToken, expires_at: expiration_date });
     } catch (err) {
         console.error(err);
         return res.json({success: false, error: 'Invalid credentials.'});
@@ -79,38 +171,22 @@ async function validateCredentials(db, user, username, password) {
     console.log(password);
     if (!user) {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const timeNow = new Date().toLocaleString('ja-JP', {
-            timeZone: 'Pacific/Auckland',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        }).replace(/\//g, '-');
+        const timeNow = getTimestamp();
+        console.log(timeNow); // Output: "2023-03-29 08:15:30"
         db.run(`INSERT OR IGNORE INTO users (username, password, created_at) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
         console.log("Created new account.");
-        logMessage('Creating New Account...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+        await logMessage('Creating New Account...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     } else {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             await sleep(5000);
             throw new Error('Incorrect password.');
         } else {
-            const timeNow = new Date().toLocaleString('ja-JP', {
-                timeZone: 'Pacific/Auckland',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            }).replace(/\//g, '-');
+            const timeNow = getTimestamp();
+            console.log(timeNow); // Output: "2023-03-29 08:15:30"
             db.run(`UPDATE users SET last_login_at = ? WHERE username = ?`, [timeNow, username]);
             console.log("Updated last login time.");
-            logMessage('Updating last login time...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+            await logMessage('Updating last login time...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
         }
     }
 }
@@ -179,7 +255,7 @@ app.get('/get/quizlet', async (req, res) => {
                 }
             });
         });
-        logMessage('Getting Quizlet Data...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+        await logMessage('Getting Quizlet Data...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error retrieving Quizlet data');
@@ -217,16 +293,8 @@ app.post('/post/typed', (req, res) => {
             const {id} = row;
             db.serialize(() => {
                 db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, def TEXT, term TEXT, created_at TEXT)');
-                const timeNow = new Date().toLocaleString('ja-JP', {
-                    timeZone: 'Pacific/Auckland',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false
-                }).replace(/\//g, '-');
+                const timeNow = getTimestamp();
+                console.log(timeNow); // Output: "2023-03-29 08:15:30"
                 db.run('INSERT INTO history (user_id, quizlet_id, def, term, created_at) VALUES (?, ?, ?, ?, ?)', [id, quizlet_id, def, term, timeNow], (err) => {
                     if (err) {
                         console.error(err);
@@ -276,7 +344,7 @@ app.get('/get/history', async (req, res) => {
             });
         });
     });
-    logMessage('Getting history...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+    await logMessage('Getting history...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
 });
 
 app.get('/get/furigana', async (req, res) => {
@@ -286,12 +354,12 @@ app.get('/get/furigana', async (req, res) => {
     if (result === true) {
         const furigana = await kuroshiro.convert(term, {mode:"furigana", to:"hiragana"});
         console.log(furigana);
-        logMessage('Getting Furigana...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+        await logMessage('Getting Furigana...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
         res.json({ furigana });
     }
     else {
         res.json({ furigana: term });
-        logMessage('Sending back term with no furigana...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+        await logMessage('Sending back term with no furigana...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     }
 });
 
@@ -333,7 +401,7 @@ app.get('/leaderboard', async (req, res) => {
         console.log(data);
         res.header('Content-Type', 'text/html');
         res.send(html);
-        logMessage('Sending Leaderboard...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+        await logMessage('Sending Leaderboard...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     } catch (err) {
         console.error(err.message);
         let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${quizlet_id}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/leaderboard/style.css" /></head><body>`;
@@ -405,7 +473,7 @@ app.get('/profile', async (req, res) => {
             res.header('Content-Type', 'text/html');
             res.send(html);
         }
-        logMessage('Sending Profile Page...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+        await logMessage('Sending Profile Page...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     } catch (err) {
         let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/facicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/profile/style.css" /></head><body>`;
         html += `<h1>${username}'s profile</h1>`;
@@ -419,7 +487,7 @@ async function getPlaytime(username, db) {
     if (!user) return 0;
     const row = (await queryDb(db, `SELECT playtime FROM playtime WHERE user_id = ?`, [user.id]))[0];
     if (!row) return 0;
-    logMessage('Getting Playtime...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+    await logMessage('Getting Playtime...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     return row.playtime;
 }
 
@@ -504,7 +572,7 @@ app.post('/post/playtime', async (req, res) => {
             await queryDb(db, `INSERT INTO playtime (user_id, playtime) VALUES (?, ?)`, [user[0].id, playtime]);
             res.send(`Playtime inserted for ${username}`);
         }
-        logMessage('Posting Playtime...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+        await logMessage('Posting Playtime...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Internal server error');
@@ -529,14 +597,14 @@ async function quizlet(id){
         currentLength = res.responses[0].models.studiableItem.length;
         token = res.responses[0].paging.token;
     }
-    logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+    await logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     return terms;
 }
 
 async function getQuizletDetails(id) {
     const response = await fetch(`https://quizlet.com/webapi/3.4/sets/${id}`).then(res => res.json());
     const set = response.responses[0].models.set[0];
-    logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+    await logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     return {
         quizlet_title: set.title,
         termLang: set.wordLang,
