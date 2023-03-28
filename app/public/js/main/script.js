@@ -22,8 +22,12 @@ submitQuizletButton = document.getElementById("submitQuizlet");
 setting_username = document.getElementById("setting_username");
 logoutButton = document.getElementById("logout");
 loadingSection = document.getElementById("loading");
+loadingText = loadingSection.querySelector('p');
 
 const address = '';
+
+let loadingInterval;
+
 class Playtime {
     constructor() {
         this.data = [];
@@ -79,6 +83,11 @@ window.onload = async () => {
 }
 
 function sendAuthToken() {
+// Show loading section and start dot animation
+    loadingSection.style.display = 'block';
+    loadingInterval = setInterval(() => {
+        loadingText.textContent += '.';
+    }, 1000);
     const auth_token = document.cookie
         .split('; ')
         .find(row => row.startsWith('auth_token='))
@@ -135,6 +144,9 @@ const startGame = async (username, response) => {
     console.log(username);
     await getHistory(username, response);
     loadingSection.style.display = 'none';
+    setTimeout(() => {
+        clearInterval(loadingInterval);
+    }, 0);
     loginSection.style.display = 'none';
     gameSection.style.display = 'block';
     statsSection.style.display = 'block';
@@ -195,8 +207,8 @@ const getWords = (username) => {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
-            startGame(username, response);
             submitButton.disabled = false;
+            startGame(username, response);
         } else if (xhr.status === 400) {
             console.error(xhr.statusText);
             submitButton.disabled = false;
