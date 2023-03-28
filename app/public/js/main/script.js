@@ -407,12 +407,12 @@ menuToggle.addEventListener("click", function() {
     if (menuToggle.textContent === "\u2630") {
         typingInput.style.display = "none";
         menuToggle.textContent = "\u2716";
-        stop();
+        playtime.stop();
     } else {
         document.body.appendChild(typingInput);
         typingInput.style.display = "block";
         menuToggle.textContent = "\u2630";
-        start();
+        playtime.start();
     }
 
     quizletLinkSettings.value = localStorage.getItem('quizlet');
