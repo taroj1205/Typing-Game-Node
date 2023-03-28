@@ -49,7 +49,7 @@ class Playtime {
 
 const playtime = new Playtime();
 
-window.onload = () => {
+window.onload = async () => {
     loginSection.style.display = 'block';
     gameSection.style.display = 'none';
     statsSection.style.display = 'none';
@@ -70,6 +70,36 @@ window.onload = () => {
     } else {
         console.log("Hiding furigana.");
         hideFurigana();
+    }
+    await sendAuthToken();
+}
+
+function sendAuthToken() {
+    const auth_token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_token='))
+        ?.split('=')[1];
+
+    if (auth_token) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/auth');
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                console.log('Auth token matched successfully.');
+                const response = JSON.parse(xhr.responseText);
+                const username = response.username;
+                getWords(username);
+            } else {
+                console.log('Error sending auth token:', xhr.statusText);
+            }
+        };
+        xhr.onerror = function() {
+            console.error('Error sending auth token:', xhr.statusText);
+        };
+        xhr.send(JSON.stringify({ auth_token }));
+    } else {
+        console.log('No auth token found in cookie.');
     }
 }
 
@@ -93,6 +123,7 @@ setVisualViewport();
 window.visualViewport.addEventListener('resize', setVisualViewport)
 
 const startGame = async (username, response) => {
+    console.log(username);
     await getHistory(username, response);
     loginSection.style.display = 'none';
     gameSection.style.display = 'block';
@@ -117,6 +148,10 @@ const login = () => {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
             if (response.success) {
+                const expirationDate = new Date(response.expires_at);
+                document.cookie = `auth_token=${response.auth_token}; expires=${expirationDate.toUTCString()}; path=/;`;
+                const urlValue = urlInput.value;
+                localStorage.setItem('quizlet', urlValue);
                 getWords(username);
             } else {
                 console.error('Login failed.');
@@ -141,8 +176,7 @@ const login = () => {
 }
 
 const getWords = (username) => {
-    const urlValue = urlInput.value;
-    localStorage.setItem('quizlet', urlValue);
+    const urlValue = localStorage.getItem("quizlet");
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/quizlet?url=${urlValue}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -529,8 +563,24 @@ window.addEventListener('blur', () => {
 });
 
 window.addEventListener('focus', () => {
-    playtime.start();
+    const authToken = getAuthToken(); // replace this with your function to get the auth token from the cookie
+    if (authToken) {
+        playtime.start();
+    }
 });
+
+function getAuthToken() {
+    const cookie = document.cookie;
+    if (cookie) {
+        const cookieParts = cookie.split('; ');
+        for (const part of cookieParts) {
+            if (part.startsWith('authToken=')) {
+                return part.substring('authToken='.length);
+            }
+        }
+    }
+    return null;
+}
 
 toggleFurigana.addEventListener("click", furiganaSetting);
 
