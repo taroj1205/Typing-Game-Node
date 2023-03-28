@@ -409,8 +409,6 @@ app.get('/leaderboard', async (req, res) => {
         console.log("Sending ", html);
         res.header('Content-Type', 'text/html');
         res.send(`${html}</body></html>`);
-    } finally {
-        db.close();
     }
 });
 
