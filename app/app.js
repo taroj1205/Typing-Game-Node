@@ -573,7 +573,7 @@ async function formatDuration(durationInMs) {
     return parts.join(' ');
 }
 
-const logsDir = path.join(__dirname, 'logs');
+const logsDir = path.join(__dirname, 'log');
 if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir);
 }
