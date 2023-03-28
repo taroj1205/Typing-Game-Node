@@ -391,7 +391,7 @@ app.get('/profile', async (req, res) => {
             res.send(html);
         }
     } catch (err) {
-        let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/profiles/style.css" /></head><body>`;
+        let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/facicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/profile/style.css" /></head><body>`;
         html += `<h1>${username}'s profile</h1>`;
         html += `<p>${username} has not typed any words yet.</p>`;
         res.send(html);
