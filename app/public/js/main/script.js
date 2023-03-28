@@ -21,6 +21,7 @@ quizletLinkSettings = document.getElementById("quizletLinkSettings");
 submitQuizletButton = document.getElementById("submitQuizlet");
 setting_username = document.getElementById("setting_username");
 logoutButton = document.getElementById("logout");
+loadingSection = document.getElementById("loading");
 
 const address = '';
 class Playtime {
@@ -52,7 +53,8 @@ class Playtime {
 const playtime = new Playtime();
 
 window.onload = async () => {
-    loginSection.style.display = 'block';
+    loadingSection.style.display = 'block';
+    loginSection.style.display = 'none';
     gameSection.style.display = 'none';
     statsSection.style.display = 'none';
     urlInput.value = localStorage.getItem('quizlet') || '';
@@ -98,9 +100,14 @@ function sendAuthToken() {
         };
         xhr.onerror = function() {
             console.error('Error sending auth token:', xhr.statusText);
+            loadingSection.style.display = 'none';
+            submitButton.disabled = false;
         };
         xhr.send(JSON.stringify({ auth_token }));
     } else {
+        loadingSection.style.display = 'none';
+        loginSection.style.display = 'block';
+        submitButton.disabled = false;
         console.log('No auth token found in cookie.');
     }
 }
@@ -127,6 +134,7 @@ window.visualViewport.addEventListener('resize', setVisualViewport)
 const startGame = async (username, response) => {
     console.log(username);
     await getHistory(username, response);
+    loadingSection.style.display = 'none';
     loginSection.style.display = 'none';
     gameSection.style.display = 'block';
     statsSection.style.display = 'block';
