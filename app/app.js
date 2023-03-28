@@ -29,18 +29,6 @@ app.use(express.json(), (req, res, next) => {
 app.use(express.static(path.resolve(__dirname, 'public')));
 
 app.get('/', (req, res) => {
-    db.run(`DROP TABLE IF EXISTS users`);
-    db.run(`
-            CREATE TABLE IF NOT EXISTS users (
-               id INTEGER PRIMARY KEY,
-               username TEXT NOT NULL,
-               password TEXT NOT NULL,
-               created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-               auth_token TEXT DEFAULT NULL,
-               auth_token_expiration TEXT DEFAULT NULL,
-               last_login_at TEXT DEFAULT NULL
-            );
-        `);
     logMessage('Sending index.html...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     res.sendFile(path.join(__dirname, 'public', 'html', 'main', 'index.html'));
 });
