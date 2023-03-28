@@ -5,6 +5,8 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 const handlebars = require('handlebars');
+const winston = require('winston');
+const StackTrace = require('stack-trace');
 const app = express();
 const port = process.env.APP_LISTEN_PORT;
 const address = process.env.APP_LISTEN_IP_ADDRRESS;
@@ -16,6 +18,8 @@ kuroshiro.init(new KuromojiAnalyzer());
 const dataPath = path.join(__dirname, 'data');
 const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
 
+
+
 app.use(express.json(), (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -25,6 +29,7 @@ app.use(express.json(), (req, res, next) => {
 app.use(express.static(path.resolve(__dirname, 'public')));
 
 app.get('/', (req, res) => {
+    logMessage('Sending index.html...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     res.sendFile(path.join(__dirname, 'public', 'html', 'main', 'index.html'));
 });
 
@@ -44,6 +49,7 @@ app.post('/login', async (req, res) => {
         last_login_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
       )
     `);
+        logMessage('Creating users table...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     });
 
     try {
@@ -65,6 +71,7 @@ async function findUser(db, username) {
             } else {
                 resolve(row);
             }
+            logMessage('Finding User...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
         });
     });
 }
@@ -85,6 +92,7 @@ async function validateCredentials(db, user, username, password) {
         }).replace(/\//g, '-');
         db.run(`INSERT OR IGNORE INTO users (username, password, created_at) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
         console.log("Created new account.");
+        logMessage('Creating New Account...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     } else {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
@@ -103,6 +111,7 @@ async function validateCredentials(db, user, username, password) {
             }).replace(/\//g, '-');
             db.run(`UPDATE users SET last_login_at = ? WHERE username = ?`, [timeNow, username]);
             console.log("Updated last login time.");
+            logMessage('Updating last login time...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
         }
     }
 }
@@ -171,6 +180,7 @@ app.get('/get/quizlet', async (req, res) => {
                 }
             });
         });
+        logMessage('Getting Quizlet Data...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error retrieving Quizlet data');
@@ -186,6 +196,7 @@ function checkAndCreateDir() {
         fs.mkdirSync(dataPath, { recursive: true });
         console.log(`Created directory at ${dataPath}`);
     }
+    logMessage('Creating data Directory...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
 }
 
 app.post('/post/typed', (req, res) => {
@@ -229,6 +240,7 @@ app.post('/post/typed', (req, res) => {
             });
         });
     });
+    logMessage('Posting to history...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
 });
 
 app.get('/get/history', async (req, res) => {
@@ -265,6 +277,7 @@ app.get('/get/history', async (req, res) => {
             });
         });
     });
+    logMessage('Getting history...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
 });
 
 app.get('/get/furigana', async (req, res) => {
@@ -274,10 +287,12 @@ app.get('/get/furigana', async (req, res) => {
     if (result === true) {
         const furigana = await kuroshiro.convert(term, {mode:"furigana", to:"hiragana"});
         console.log(furigana);
+        logMessage('Getting Furigana...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
         res.json({ furigana });
     }
     else {
         res.json({ furigana: term });
+        logMessage('Sending back term with no furigana...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     }
 });
 
@@ -319,6 +334,7 @@ app.get('/leaderboard', async (req, res) => {
         console.log(data);
         res.header('Content-Type', 'text/html');
         res.send(html);
+        logMessage('Sending Leaderboard...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     } catch (err) {
         console.error(err.message);
         let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${quizlet_id}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/lb/style.css" /></head><body>`;
@@ -390,6 +406,7 @@ app.get('/profile', async (req, res) => {
             res.header('Content-Type', 'text/html');
             res.send(html);
         }
+        logMessage('Sending Profile Page...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     } catch (err) {
         let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/facicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/profile/style.css" /></head><body>`;
         html += `<h1>${username}'s profile</h1>`;
@@ -403,6 +420,7 @@ async function getPlaytime(username, db) {
     if (!user) return 0;
     const row = (await queryDb(db, `SELECT playtime FROM playtime WHERE user_id = ?`, [user.id]))[0];
     if (!row) return 0;
+    logMessage('Getting Playtime...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     return row.playtime;
 }
 
@@ -421,6 +439,7 @@ async function getWordCountPerDay(username, db) {
                 resolve(wordCountPerDay);
             }
         });
+        logMessage('Getting Word Counts...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     });
 }
 
@@ -449,6 +468,7 @@ async function getDataProfile(username, db) {
                 });
             }
         });
+        logMessage('Getting Profile Data...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     });
 }
 
@@ -485,6 +505,7 @@ app.post('/post/playtime', async (req, res) => {
             await queryDb(db, `INSERT INTO playtime (user_id, playtime) VALUES (?, ?)`, [user[0].id, playtime]);
             res.send(`Playtime inserted for ${username}`);
         }
+        logMessage('Posting Playtime...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Internal server error');
@@ -503,19 +524,20 @@ async function quizlet(id){
     let token = res.responses[0].paging.token
     let terms = res.responses[0].models.studiableItem;
     let page = 2;
-    //console.log({token, terms})
     while (currentLength >= 5){
         let res = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=${page++}&pagingToken=${token}`).then(res => res.json());
         terms.push(...res.responses[0].models.studiableItem);
         currentLength = res.responses[0].models.studiableItem.length;
         token = res.responses[0].paging.token;
     }
+    logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     return terms;
 }
 
 async function getQuizletDetails(id) {
     const response = await fetch(`https://quizlet.com/webapi/3.4/sets/${id}`).then(res => res.json());
     const set = response.responses[0].models.set[0];
+    logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     return {
         quizlet_title: set.title,
         termLang: set.wordLang,
@@ -550,6 +572,31 @@ async function formatDuration(durationInMs) {
     return parts.join(' ');
 }
 
+const logsDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir);
+}
+
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    defaultMeta: { service: 'user-service' },
+    transports: [
+        new winston.transports.File({ filename: path.join(logsDir, 'error.log'), level: 'error' }),
+        new winston.transports.File({ filename: path.join(logsDir, 'combined.log') }),
+    ],
+});
+
+function logMessage(message, level) {
+    const stack = StackTrace.get();
+    const callerFile = stack[1].getFileName();
+    const callerLine = stack[1].getLineNumber();
+    const meta = { file: callerFile, line: callerLine };
+    logger.log(level, message, meta);
+}
 
 app.listen(port, address, () => {
     console.log(`Server listening on http://${address}:${port}`);
