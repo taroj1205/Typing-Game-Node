@@ -229,12 +229,22 @@ const getWords = (username) => {
     xhr.send();
 }
 
+let randomIndex = 0;
+
 const newWord = (username, response) => {
     let num = 0;
     const termLength = response.term.length;
     const defLength = response.def.length;
     const maxIndex = Math.max(termLength, defLength) - 1;
-    const randomIndex = Math.floor(Math.random() * (maxIndex + 1));
+    const lastRandomIndex = randomIndex;
+
+    if (maxIndex > 0) {
+        randomIndex = Math.floor(Math.random() * (maxIndex + 1));
+        while (randomIndex === lastRandomIndex) {
+            randomIndex = Math.floor(Math.random() * (maxIndex + 1));
+        }
+    }
+
     const term = response.term[randomIndex];
     const def = response.def[randomIndex];
     termText.textContent = term;
