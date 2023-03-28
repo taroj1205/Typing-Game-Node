@@ -6,7 +6,8 @@ const fs = require('fs');
 const bcrypt = require('bcrypt');
 const handlebars = require('handlebars');
 const winston = require('winston');
-const StackTrace = require('stack-trace');
+const moment = require('moment-timezone');
+const StackTrace = require('stacktrace-js');
 const app = express();
 const port = process.env.APP_LISTEN_PORT;
 const address = process.env.APP_LISTEN_IP_ADDRRESS;
@@ -17,8 +18,6 @@ kuroshiro.init(new KuromojiAnalyzer());
 
 const dataPath = path.join(__dirname, 'data');
 const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
-
-
 
 app.use(express.json(), (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -337,7 +336,7 @@ app.get('/leaderboard', async (req, res) => {
         logMessage('Sending Leaderboard...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     } catch (err) {
         console.error(err.message);
-        let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${quizlet_id}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/Files/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/lb/style.css" /></head><body>`;
+        let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${quizlet_id}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/leaderboard/style.css" /></head><body>`;
         html += `<h1>Leaderboard - ${quizlet_id}</h1><p>No one has typed any words yet!</p>`;
         console.log("Sending ", html);
         res.header('Content-Type', 'text/html');
@@ -547,9 +546,11 @@ async function getQuizletDetails(id) {
 
 async function queryDb(db, sql, params) {
     return new Promise((resolve, reject) => {
-        db.all(sql, params, (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+        db.serialize(() => {
+            db.all(sql, params, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
         });
     });
 }
@@ -580,7 +581,11 @@ if (!fs.existsSync(logsDir)) {
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.combine(
-        winston.format.timestamp(),
+        winston.format.timestamp({
+            format: () => {
+                return moment().tz('Pacific/Auckland').format('YYYY-MM-DD HH:mm:ss');
+            }
+        }),
         winston.format.json()
     ),
     defaultMeta: { service: 'user-service' },
@@ -590,10 +595,10 @@ const logger = winston.createLogger({
     ],
 });
 
-function logMessage(message, level) {
-    const stack = StackTrace.get();
-    const callerFile = stack[1].getFileName();
-    const callerLine = stack[1].getLineNumber();
+const logMessage = async (message, level) => {
+    const stack = await StackTrace.get();
+    const callerFile = stack[1].fileName;
+    const callerLine = stack[1].lineNumber;
     const meta = { file: callerFile, line: callerLine };
     logger.log(level, message, meta);
 }
