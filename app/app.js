@@ -81,13 +81,17 @@ async function generateAuthToken(db, username) {
 
 async function getUniqueAuthToken(db) {
     const authToken = uuid.v4();
-    const rows = await queryDb(db, `SELECT auth_token FROM users WHERE auth_token = ?`, [authToken]);
-    if (rows.length > 0) {
-        return getUniqueAuthToken(db);
-    } else {
-        return authToken;
+    const existingUser = await queryDb(db, `SELECT auth_token, auth_token_expiration FROM users WHERE auth_token = ?`, [authToken]);
+
+    if (existingUser && existingUser.auth_token_expiration) {
+        // Check if the existing token has expired
+        const expirationDate = new Date(existingUser.auth_token_expiration);
+        if (expirationDate > new Date()) {
+            return { authToken: existingUser.auth_token, expirationDate };
+        }
     }
-    await logMessage('Generating auth token...', 'info');
+
+    return { authToken, expirationDate: null };
 }
 
 async function authenticateUser(db, authToken) {
@@ -124,7 +128,7 @@ app.post('/login', async (req, res) => {
     console.log(username, password);
     checkAndCreateDir();
 
-    db.serialize(() => {
+    await db.serialize(() => {
         db.run(`
             CREATE TABLE IF NOT EXISTS users (
                id INTEGER PRIMARY KEY,
@@ -668,6 +672,8 @@ const logMessage = async (message, level) => {
     const meta = { file: callerFile, line: callerLine };
     logger.log(level, message, meta);
 }
+
+checkAndCreateDir();
 
 app.listen(port, address, () => {
     console.log(`Server listening on http://${address}:${port}`);

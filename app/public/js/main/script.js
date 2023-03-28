@@ -19,6 +19,8 @@ toggleFurigana = document.getElementById("toggleFurigana");
 furiganaSettingStatus = toggleFurigana.textContent;
 quizletLinkSettings = document.getElementById("quizletLinkSettings");
 submitQuizletButton = document.getElementById("submitQuizlet");
+setting_username = document.getElementById("setting_username");
+logoutButton = document.getElementById("logout");
 
 const address = '';
 class Playtime {
@@ -177,6 +179,7 @@ const login = () => {
 
 const getWords = (username) => {
     const urlValue = localStorage.getItem("quizlet");
+    setting_username.textContent = username;
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/quizlet?url=${urlValue}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -574,8 +577,8 @@ function getAuthToken() {
     if (cookie) {
         const cookieParts = cookie.split('; ');
         for (const part of cookieParts) {
-            if (part.startsWith('authToken=')) {
-                return part.substring('authToken='.length);
+            if (part.startsWith('auth_token=')) {
+                return part.substring('auth_token='.length);
             }
         }
     }
@@ -587,3 +590,8 @@ toggleFurigana.addEventListener("click", furiganaSetting);
 window.onbeforeunload = function () {
     sendPlaytime();
 }
+
+logoutButton.addEventListener("click", () => {
+    document.cookie = 'auth_token=;';
+    window.location.reload();
+});
