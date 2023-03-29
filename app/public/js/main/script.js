@@ -88,8 +88,13 @@ const loading = () => {
     gameSection.style.display = 'none';
     loginSection.style.display = 'none';
     menuToggle.style.display = 'none';
-    const quizlet_id_match = localStorage.getItem("quizlet").match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
-    const quizlet_id = quizlet_id_match[1];
+    const quizlet = localStorage.getItem("quizlet");
+    let quizlet_id_match;
+    let quizlet_id = '';
+    if (quizlet) {
+        quizlet_id_match = localStorage.getItem("quizlet").match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+        quizlet_id = quizlet_id_match[1];
+    }
     loadingInterval = setInterval(() => {
         loadingText.textContent += '.';
         const startTime = performance.now();
