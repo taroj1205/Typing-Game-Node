@@ -1,6 +1,7 @@
 @font-face {
     font-family: 'SourceCodePro-Regular';
     src: url('../../font/SourceCodePro-Regular.ttf') format('truetype');
+    font-display: swap;
 }
 
 body {
