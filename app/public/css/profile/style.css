@@ -9,7 +9,7 @@ body {
     color: #ffffff;
     font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
     height: 100%;
-    width: var(---vw);
+    width: 100%;
 }
 
 h1, h2 {
@@ -34,6 +34,6 @@ canvas {
 
 @media screen and (max-width: 600px) {
     div {
-        width: calc(var(--vvw) - 20px);
+        width: calc(100% - 20px);
     }
 }
