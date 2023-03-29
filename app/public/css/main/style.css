@@ -21,6 +21,7 @@ body {
 
 #loading {
   text-align: center;
+  white-space: nowrap;
 }
 #loading h1 {
   font-size: 3rem;
