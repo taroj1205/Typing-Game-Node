@@ -23,6 +23,7 @@ setting_username = document.getElementById("setting_username");
 logoutButton = document.getElementById("logout");
 loadingSection = document.getElementById("loading");
 loadingText = loadingSection.querySelector('p');
+pingText = document.getElementById("ping");
 
 const address = '';
 
@@ -79,15 +80,40 @@ window.onload = async () => {
         console.log("Hiding furigana.");
         hideFurigana();
     }
-    await sendAuthToken();
+    await getUsername();
 }
 
-function sendAuthToken() {
-// Show loading section and start dot animation
+const loading = () => {
     loadingSection.style.display = 'block';
+    gameSection.style.display = 'none';
+    loginSection.style.display = 'none';
+    menuToggle.style.display = 'none';
+    const quizlet_id_match = localStorage.getItem("quizlet").match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+    const quizlet_id = quizlet_id_match[1];
     loadingInterval = setInterval(() => {
         loadingText.textContent += '.';
+        const startTime = performance.now();
+        const pingUrl = `https://quizlet.com/${quizlet_id}/`;
+        fetch(pingUrl, { method: 'HEAD', mode: 'no-cors' }).then(() => {
+            const endTime = performance.now();
+            const pingTime = Math.round(endTime - startTime);
+            pingText.textContent = `Ping to Quizlet: ${pingTime} ms`;
+        }).catch((error) => {
+            console.log(error);
+        });
     }, 1000);
+    setTimeout(() => {
+        if (loadingSection.style.display === 'block') {
+            clearInterval(loadingInterval);
+            document.cookie = 'auth_token=;';
+            alert('Timeout reached. Reloading...');
+            window.location.reload();
+        }
+    }, 15000);
+}
+
+const getUsername = async () => {
+    await loading();
     const auth_token = document.cookie
         .split('; ')
         .find(row => row.startsWith('auth_token='))
@@ -143,18 +169,19 @@ window.visualViewport.addEventListener('resize', setVisualViewport)
 const startGame = async (username, response) => {
     console.log(username);
     await getHistory(username, response);
-    loadingSection.style.display = 'none';
+    pingText.style.display = 'none';
     setTimeout(() => {
         clearInterval(loadingInterval);
-    }, 0);
-    loginSection.style.display = 'none';
-    gameSection.style.display = 'block';
-    statsSection.style.display = 'block';
-    typingInput.style.display = 'block';
-    gameTitle.textContent = response.quizlet_title;
-    quizlet_id = response.quizlet_id;
-    addLinks(username, quizlet_id);
-    newWord(username, response);
+        loadingSection.style.display = 'none';
+        loginSection.style.display = 'none';
+        gameSection.style.display = 'block';
+        statsSection.style.display = 'block';
+        typingInput.style.display = 'block';
+        gameTitle.textContent = response.quizlet_title;
+        quizlet_id = response.quizlet_id;
+        addLinks(username, quizlet_id);
+        newWord(username, response);
+    }, 1500);
 }
 
 const login = () => {
@@ -198,8 +225,21 @@ const login = () => {
 }
 
 const getWords = (username) => {
+    const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
     const urlValue = localStorage.getItem("quizlet");
     setting_username.textContent = username;
+
+    const cachedData = localStorage.getItem(urlValue);
+    if (cachedData) {
+        const cachedResponse = JSON.parse(cachedData);
+        const cacheAge = Date.now() - cachedResponse.timestamp;
+        if (cacheAge < CACHE_DURATION) {
+            submitButton.disabled = false;
+            startGame(username, cachedResponse.data);
+            return;
+        }
+    }
+
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/quizlet?url=${urlValue}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -208,6 +248,8 @@ const getWords = (username) => {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
             submitButton.disabled = false;
+            const cachedResponse = { data: response, timestamp: Date.now() };
+            localStorage.setItem(urlValue, JSON.stringify(cachedResponse));
             startGame(username, response);
         } else if (xhr.status === 400) {
             console.error(xhr.statusText);
@@ -233,20 +275,36 @@ let randomIndex = 0;
 
 const newWord = (username, response) => {
     let num = 0;
+    typingInput.value = '';
     const termLength = response.term.length;
     const defLength = response.def.length;
     const maxIndex = Math.max(termLength, defLength) - 1;
-    const lastRandomIndex = randomIndex;
+    let lastRandomIndex = randomIndex;
 
-    if (maxIndex > 0) {
-        randomIndex = Math.floor(Math.random() * (maxIndex + 1));
-        while (randomIndex === lastRandomIndex) {
+    if (maxIndex >= 10 && randomIndex < maxIndex && randomIndex > 0) {
+        randomIndex++;
+    } else if (randomIndex === 0 || randomIndex === maxIndex) {
+        randomIndex = 0;
+    } else if (maxIndex < 10) {
+        if (maxIndex > 0) {
             randomIndex = Math.floor(Math.random() * (maxIndex + 1));
+            while (randomIndex === lastRandomIndex) {
+                randomIndex = Math.floor(Math.random() * (maxIndex + 1));
+            }
+        } else {
+            randomIndex = 0;
         }
     }
 
+    console.log('randomIndex: ' + randomIndex);
+
     const term = response.term[randomIndex];
     const def = response.def[randomIndex];
+
+    if (randomIndex === 0) {
+        randomIndex++;
+    }
+
     termText.textContent = term;
     defText.textContent = def;
     titleHTML.textContent += ' - ' + response.quizlet_title;
@@ -256,45 +314,95 @@ const newWord = (username, response) => {
         updateFurigana();
     });
 
-    const minFontSize = 10; // set a minimum font size for the elements
     let termFontSize = 70;
     let defFontSize = 120;
 
     while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
         defFontSize--;
         defText.style.fontSize = `${defFontSize}px`;
+        defFontSize = 120;
     }
 
     while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
         termFontSize--;
         termText.style.fontSize = `${termFontSize}px`;
+        termFontSize = 70;
     }
 
     typing(num, def, term, username, response);
 }
 
+let composing = false;
+let composed = '';
+
 const typing = (num, def, term, username, response) => {
-    typingInput.addEventListener("input", function(event) {
-        if (event.inputType === "insertText" && event.data === def[num])
-        {
+    const typingInput = document.querySelector('#typingInput');
+    const defOutput = document.querySelector('#def');
+
+    const updateDefOutput = (numCorrect) => {
+        const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, numCorrect)}</span>`;
+        const notYet = `<span style="color: #1fd755;" id="notYet">${def.substring(numCorrect)}</span>`;
+        defOutput.innerHTML = typedOut + notYet;
+    }
+
+    typingInput.addEventListener('compositionstart', () => {
+        composing = true;
+        console.log('composing');
+    });
+
+    typingInput.addEventListener('compositionend', (event) => {
+        console.log(num);
+        console.log('not composing');
+        const typed = event.target.value;
+        composed = '';
+        composing = false;
+
+        let numCorrect = num;
+        for (let i = num; i < (typed.length + num); i++) {
+            if (typed.charAt(i - num) === def[i]) {
+                numCorrect++;
+                updateDefOutput(numCorrect);
+            } else {
+                break;
+            }
+        }
+        console.log(numCorrect);
+        num += numCorrect;
+
+        if (numCorrect >= def.length) {
+            const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
+            wordCountText.innerHTML = `Words: ${wordCount + 1}`;
+            submitTyped(def, term, username, response);
+            newWord(username, response);
+        }
+    });
+
+    typingInput.addEventListener('input', (event) => {
+        if (composing) {
+            composed = event.data;
+            return;
+        }
+
+        if (event.inputType === 'insertText' && event.data === def[num]) {
             console.log(event.data);
             num++;
-            const typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
-            const notYet = "<span style='color: #1fd755;' id='notYet'>" + def.substring(num) + "</span>";
-            document.querySelector("#def").innerHTML = typedOut + notYet;
+            updateDefOutput(num);
             if (num >= def.length) {
                 const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
                 wordCountText.innerHTML = `Words: ${wordCount+1}`;
                 submitTyped(def, term, username, response);
                 newWord(username, response);
             }
-        } else {
-            const typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
-            const notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
-            document.querySelector("#def").innerHTML = typedOut + notYet;
+        } else if (event.inputType === 'deleteContentBackward' && composed === '') {
+            num = Math.max(num - 1, 0);
+            updateDefOutput(num);
+        } else if (event.inputType !== 'historyUndo' && event.inputType !== 'historyRedo' && !composing) {
+            const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, num)}</span>`;
+            const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(num)}</span>`;
+            defOutput.innerHTML = typedOut + notYet;
         }
     });
-}
+};
 
 const submitTyped = (def, term, username, response) => {
     const xhr = new XMLHttpRequest();
@@ -321,6 +429,7 @@ const submitTyped = (def, term, username, response) => {
 }
 
 const getHistory = async (username, response) => {
+    username = username.trim();
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
     xhr.onload = function() {
@@ -427,11 +536,13 @@ const furigana = (term, callback) => {
 }
 
 document.addEventListener("keypress", function(event) {
-    typingInput.focus();
-    typingInput.value += event.key;
-    const inputEvent = new InputEvent('input', {bubbles: true});
-    typingInput.dispatchEvent(inputEvent);
-})
+    if (document.activeElement !== typingInput && typingInput.style.display === "block" && !composing) {
+        typingInput.focus();
+        typingInput.value += event.key;
+        const inputEvent = new InputEvent('input', {bubbles: true});
+        typingInput.dispatchEvent(inputEvent);
+    }
+});
 
 menuToggle.addEventListener("click", function() {
     menuScene.style.display = (menuScene.style.display === "inline-block") ? "none" : "inline-block";
@@ -504,48 +615,20 @@ const updateFurigana = () => {
 };
 
 const getNewQuizletData = () => {
-    const urlValue = quizletLinkSettings.value;
-    const username = usernameInput.value;
-    submitQuizletButton.disabled = true;
-    const currentQuizlet = localStorage.getItem('quizlet');
-
-    if (urlValue != currentQuizlet) {
-        localStorage.setItem('quizlet', urlValue);
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', `${address}/get/quizlet?url=${urlValue}`);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                console.log(response);
-                gameTitle.textContent = response.quizlet_title;
-                quizlet_id = response.quizlet_id;
-                addLinks(username, quizlet_id);
-                getHistory(username, response);
-                newWord(username, response);
-                submitQuizletButton.disabled = false;
-                menuToggle.click();
-            } else if (xhr.status === 400) {
-                console.error(xhr.statusText);
-                submitQuizletButton.disabled = false;
-                quizletLinkSettings.style.borderColor = 'red';
-                quizletLinkSettings.value = '';
-                quizletLinkSettings.placeholder = 'Please use quizlet.com';
-            } else {
-                console.error(xhr.statusText);
-                submitQuizletButton.disabled = false;
-                return;
-            }
-        };
-        xhr.onerror = function () {
-            console.error(xhr.statusText);
-            console.error('Request failed.');
-            submitQuizletButton.disabled = false;
-        };
-        xhr.send();
+    submitButton.disabled = true;
+    const url = quizletLinkSettings.value.trim();
+    const oldURL = localStorage.getItem('quizlet');
+    if (oldURL !== url) {
+        localStorage.setItem('quizlet', url);
+        submitButton.disabled = false;
+        quizletLinkSettings.style.borderColor = '';
+        menuToggle.click();
+        getUsername();
     } else {
         submitQuizletButton.disabled = false;
         quizletLinkSettings.style.borderColor = 'red';
+        quizletLinkSettings.value = '';
+        quizletLinkSettings.placeholder = 'Please enter new Quizlet link';
     }
 }
 
@@ -596,9 +679,11 @@ window.addEventListener('blur', () => {
 });
 
 window.addEventListener('focus', () => {
-    const authToken = getAuthToken(); // replace this with your function to get the auth token from the cookie
-    if (authToken) {
-        playtime.start();
+    if (loadingSection.style.display === "none") {
+        const authToken = getAuthToken(); // replace this with your function to get the auth token from the cookie
+        if (authToken) {
+            playtime.start();
+        }
     }
 });
 

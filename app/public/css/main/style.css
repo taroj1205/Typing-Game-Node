@@ -62,7 +62,7 @@ body {
   margin: 0;
   padding: 0;
   position: fixed;
-  transform: translateX(-50%);
+  transform: translateX(-52%);
   white-space: nowrap;
 }
 ruby {
@@ -201,7 +201,7 @@ ruby {
 @media (min-width: 768px) {
   #term {
     font-size: 5vw;
-    bottom: 5.25vw;
+    bottom: 9.25vw;
   }
   #def {
     font-size: 10vw;

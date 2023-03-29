@@ -604,7 +604,11 @@ async function quizlet(id){
 }
 
 async function getQuizletDetails(id) {
-    const response = await fetch(`https://quizlet.com/webapi/3.4/sets/${id}`).then(res => res.json());
+    const response = await fetch(`https://quizlet.com/webapi/3.4/sets/${id}`, {
+        headers: {
+            'Content-Type': 'application/json;charset=utf-8'
+        }
+    }).then(res => res.json());
     const set = response.responses[0].models.set[0];
     await logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     return {
