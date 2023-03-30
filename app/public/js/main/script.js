@@ -136,12 +136,10 @@ const getUsername = async () => {
                 getWords(username);
             } else {
                 console.log('Error sending auth token:', xhr.statusText);
-                clearInterval(loadingInterval);
             }
         };
         xhr.onerror = function() {
             console.error('Error sending auth token:', xhr.statusText);
-            clearInterval(loadingInterval);
             loadingSection.style.display = 'none';
             submitButton.disabled = false;
         };
@@ -152,6 +150,7 @@ const getUsername = async () => {
         submitButton.disabled = false;
         console.log('No auth token found in cookie.');
     }
+    clearInterval(loadingInterval);
 }
 
 const setVisualViewport = () => {
