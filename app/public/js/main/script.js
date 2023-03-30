@@ -136,10 +136,12 @@ const getUsername = async () => {
                 getWords(username);
             } else {
                 console.log('Error sending auth token:', xhr.statusText);
+                clearInterval(loadingInterval);
             }
         };
         xhr.onerror = function() {
             console.error('Error sending auth token:', xhr.statusText);
+            clearInterval(loadingInterval);
             loadingSection.style.display = 'none';
             submitButton.disabled = false;
         };
