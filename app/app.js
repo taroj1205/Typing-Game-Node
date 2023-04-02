@@ -204,12 +204,12 @@ app.get('/get/quizlet', async (req, res) => {
         return res.status(400).send('Invalid URL');
     }
 
-    const quizlet_id_match = req.query.url.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
-    const quizlet_id = quizlet_id_match[1];
+    try {    
+        const quizlet_id_match = req.query.url.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+        const quizlet_id = quizlet_id_match[1];
 
-    let title = null;
-
-    try {
+        let title = null;
+        
         checkAndCreateDir();
         const terms = await quizlet(quizlet_id);
         let term = [];
