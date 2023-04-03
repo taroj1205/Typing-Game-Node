@@ -197,6 +197,7 @@ const startGame = async (username, response) => {
     setTimeout(() => {
         clearInterval(loadingInterval);
         loadingSection.style.display = 'none';
+        menuToggle.style.display = 'block';
         loginSection.style.display = 'none';
         gameSection.style.display = 'block';
         statsSection.style.display = 'block';
@@ -236,7 +237,6 @@ const login = () => {
             console.error(xhr.statusText);
             console.error('Request failed.');
             submitButton.disabled = false;
-            return;
         }
     };
     xhr.onerror = function() {
@@ -285,7 +285,6 @@ const getWords = (username) => {
         } else {
             console.error(xhr.statusText);
             submitButton.disabled = false;
-            return;
         }
     };
     xhr.onerror = function() {
@@ -308,6 +307,10 @@ const newWord = (username, response) => {
 
     if (maxIndex >= 10 && randomIndex < maxIndex && randomIndex > 0) {
         randomIndex++;
+
+        if (randomIndex >= maxIndex) {
+            randomIndex = 0;
+        }
     } else if (randomIndex === 0 || randomIndex === maxIndex) {
         randomIndex = 0;
     } else if (maxIndex < 10) {
