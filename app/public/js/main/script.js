@@ -106,8 +106,25 @@ const loading = () => {
     loginSection.style.display = 'none';
     menuToggle.style.display = 'none';
 
+    const quizlet = localStorage.getItem("quizlet");
+    let quizlet_id_match;
+    let quizlet_id = '';
+    if (quizlet) {
+        quizlet_id_match = localStorage.getItem("quizlet").match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+        quizlet_id = quizlet_id_match[1];
+    }
+
     loadingInterval = setInterval(() => {
         loadingText.textContent += '.';
+        const startTime = performance.now();
+        const pingUrl = `https://quizlet.com/${quizlet_id}/`;
+        fetch(pingUrl, { method: 'HEAD', mode: 'no-cors' }).then(() => {
+            const endTime = performance.now();
+            const pingTime = Math.round(endTime - startTime);
+            pingText.textContent = `Ping to Quizlet: ${pingTime} ms`;
+        }).catch((error) => {
+            console.log(error);
+        });
     }, 1000);
     setTimeout(() => {
         if (loadingSection.style.display === 'block') {
@@ -120,7 +137,7 @@ const loading = () => {
 }
 
 const getUsername = async () => {
-    await loading();
+    loading();
     const auth_token = document.cookie
         .split('; ')
         .find(row => row.startsWith('auth_token='))
@@ -152,7 +169,6 @@ const getUsername = async () => {
         submitButton.disabled = false;
         console.log('No auth token found in cookie.');
     }
-    clearInterval(loadingInterval);
 }
 
 const setVisualViewport = () => {
@@ -176,8 +192,8 @@ window.visualViewport.addEventListener('resize', setVisualViewport)
 
 const startGame = async (username, response) => {
     console.log(username);
+    console.log(response);
     await getHistory(username, response);
-    pingText.style.display = 'none';
     setTimeout(() => {
         clearInterval(loadingInterval);
         loadingSection.style.display = 'none';
@@ -244,6 +260,7 @@ const getWords = (username) => {
         const cacheAge = Date.now() - cachedResponse.timestamp;
         if (cacheAge < CACHE_DURATION) {
             submitButton.disabled = false;
+            console.log(cachedResponse.data.quizlet_title);
             startGame(username, cachedResponse.data);
             return;
         }
