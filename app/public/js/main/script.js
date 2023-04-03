@@ -83,29 +83,31 @@ window.onload = async () => {
     await getUsername();
 }
 
+const updateFontSize = () => {
+    let termFontSize = 70;
+    let defFontSize = 120;
+
+    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+        defFontSize--;
+        defText.style.fontSize = `${defFontSize}px`;
+        defFontSize = 120;
+    }
+
+    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
+        termFontSize--;
+        termText.style.fontSize = `${termFontSize}px`;
+        termFontSize = 70;
+    }
+}
+
 const loading = () => {
     loadingSection.style.display = 'block';
     gameSection.style.display = 'none';
     loginSection.style.display = 'none';
     menuToggle.style.display = 'none';
-    const quizlet = localStorage.getItem("quizlet");
-    let quizlet_id_match;
-    let quizlet_id = '';
-    if (quizlet) {
-        quizlet_id_match = localStorage.getItem("quizlet").match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
-        quizlet_id = quizlet_id_match[1];
-    }
+
     loadingInterval = setInterval(() => {
         loadingText.textContent += '.';
-        const startTime = performance.now();
-        const pingUrl = `https://quizlet.com/${quizlet_id}/`;
-        fetch(pingUrl, { method: 'HEAD', mode: 'no-cors' }).then(() => {
-            const endTime = performance.now();
-            const pingTime = Math.round(endTime - startTime);
-            pingText.textContent = `Ping to Quizlet: ${pingTime} ms`;
-        }).catch((error) => {
-            console.log(error);
-        });
     }, 1000);
     setTimeout(() => {
         if (loadingSection.style.display === 'block') {
@@ -320,20 +322,7 @@ const newWord = (username, response) => {
         updateFurigana();
     });
 
-    let termFontSize = 70;
-    let defFontSize = 120;
-
-    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
-        defFontSize--;
-        defText.style.fontSize = `${defFontSize}px`;
-        defFontSize = 120;
-    }
-
-    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
-        termFontSize--;
-        termText.style.fontSize = `${termFontSize}px`;
-        termFontSize = 70;
-    }
+    updateFontSize();
 
     typing(num, def, term, username, response);
 }
