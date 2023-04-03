@@ -185,6 +185,7 @@ const startGame = async (username, response) => {
         typingInput.style.display = 'block';
         gameTitle.textContent = response.quizlet_title;
         quizlet_id = response.quizlet_id;
+        submitButton.disabled = false;
         addLinks(username, quizlet_id);
         newWord(username, response);
     }, 1500);
@@ -253,7 +254,6 @@ const getWords = (username) => {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
-            submitButton.disabled = false;
             const cachedResponse = { data: response, timestamp: Date.now() };
             localStorage.setItem(urlValue, JSON.stringify(cachedResponse));
             startGame(username, response);
