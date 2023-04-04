@@ -233,7 +233,6 @@ const getWords = (username) => {
         const cachedResponse = JSON.parse(cachedData);
         const cacheAge = Date.now() - cachedResponse.timestamp;
         if (cacheAge < CACHE_DURATION) {
-            submitButton.disabled = false;
             console.log(cachedResponse.data.quizlet_title);
             startGame(username, cachedResponse.data);
             return;
