@@ -279,6 +279,7 @@ const getWords = (username) => {
 }
 
 let randomIndex = 0;
+let lastIndex = 0;
 
 const newWord = (username, response) => {
     let num = 0;
@@ -287,15 +288,16 @@ const newWord = (username, response) => {
     const defLength = response.def.length;
     const maxIndex = Math.max(termLength, defLength) - 1;
 
-    let randomIndex = 0;
-
-    if (maxIndex < 10) {
+    if (maxIndex < 10 || termLength === 1) {
         randomIndex++;
         if (randomIndex > maxIndex) {
             randomIndex = 0;
         }
     } else {
-        randomIndex = Math.floor(Math.random() * (maxIndex + 1));
+        while (randomIndex === lastIndex) {
+            randomIndex = Math.floor(Math.random() * (maxIndex + 1));
+        }
+        lastIndex = randomIndex;
     }
 
     console.log('randomIndex: ' + randomIndex);
@@ -338,19 +340,11 @@ let composing = false;
 let composed = '';
 
 const typing = (num, def, term, username, response) => {
-    const typingInput = document.querySelector('#typingInput');
-    const defOutput = document.querySelector('#def');
-
     const updateDefOutput = (numCorrect) => {
         const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, numCorrect)}</span>`;
         const notYet = `<span style="color: #1fd755;" id="notYet">${def.substring(numCorrect)}</span>`;
-        defOutput.innerHTML = typedOut + notYet;
+        defText.innerHTML = typedOut + notYet;
     }
-
-    typingInput.addEventListener('compositionstart', () => {
-        composing = true;
-        console.log('composing');
-    });
 
     typingInput.addEventListener('compositionend', (event) => {
         console.log(num);
@@ -365,6 +359,9 @@ const typing = (num, def, term, username, response) => {
                 numCorrect++;
                 updateDefOutput(numCorrect);
             } else {
+                const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, i)}</span>`;
+                const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(i)}</span>`;
+                defText.innerHTML = typedOut + notYet;
                 break;
             }
         }
@@ -401,7 +398,7 @@ const typing = (num, def, term, username, response) => {
         } else if (event.inputType !== 'historyUndo' && event.inputType !== 'historyRedo' && !composing) {
             const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, num)}</span>`;
             const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(num)}</span>`;
-            defOutput.innerHTML = typedOut + notYet;
+            defText.innerHTML = typedOut + notYet;
         }
     });
 };
@@ -549,6 +546,7 @@ document.addEventListener("keypress", function(event) {
 menuToggle.addEventListener("click", function() {
     menuScene.style.display = (menuScene.style.display === "inline-block") ? "none" : "inline-block";
     gameSection.style.display = (gameSection.style.display === "block") ? "none" : "block";
+    linkText.style.display = (linkText.style.display === "block") ? "none" : "block";
 
     if (menuToggle.textContent === "\u2630") {
         typingInput.style.display = "none";
