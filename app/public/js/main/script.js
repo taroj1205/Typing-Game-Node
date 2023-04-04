@@ -83,23 +83,6 @@ window.onload = async () => {
     await getUsername();
 }
 
-const updateFontSize = () => {
-    let termFontSize = 70;
-    let defFontSize = 120;
-
-    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
-        defFontSize--;
-        defText.style.fontSize = `${defFontSize}px`;
-        defFontSize = 120;
-    }
-
-    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
-        termFontSize--;
-        termText.style.fontSize = `${termFontSize}px`;
-        termFontSize = 70;
-    }
-}
-
 const loading = () => {
     loadingSection.style.display = 'block';
     gameSection.style.display = 'none';
@@ -303,25 +286,16 @@ const newWord = (username, response) => {
     const termLength = response.term.length;
     const defLength = response.def.length;
     const maxIndex = Math.max(termLength, defLength) - 1;
-    let lastRandomIndex = randomIndex;
 
-    if (maxIndex >= 10 && randomIndex < maxIndex && randomIndex > 0) {
+    let randomIndex = 0;
+
+    if (maxIndex < 10) {
         randomIndex++;
-
-        if (randomIndex >= maxIndex) {
+        if (randomIndex > maxIndex) {
             randomIndex = 0;
         }
-    } else if (randomIndex === 0 || randomIndex === maxIndex) {
-        randomIndex = 0;
-    } else if (maxIndex < 10) {
-        if (maxIndex > 0) {
-            randomIndex = Math.floor(Math.random() * (maxIndex + 1));
-            while (randomIndex === lastRandomIndex) {
-                randomIndex = Math.floor(Math.random() * (maxIndex + 1));
-            }
-        } else {
-            randomIndex = 0;
-        }
+    } else {
+        randomIndex = Math.floor(Math.random() * (maxIndex + 1));
     }
 
     console.log('randomIndex: ' + randomIndex);
@@ -342,7 +316,20 @@ const newWord = (username, response) => {
         updateFurigana();
     });
 
-    updateFontSize();
+    let termFontSize = 70;
+    let defFontSize = 120;
+
+    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+        defFontSize--;
+        defText.style.fontSize = `${defFontSize}px`;
+        defFontSize = 120;
+    }
+
+    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
+        termFontSize--;
+        termText.style.fontSize = `${termFontSize}px`;
+        termFontSize = 70;
+    }
 
     typing(num, def, term, username, response);
 }
@@ -384,7 +371,7 @@ const typing = (num, def, term, username, response) => {
         console.log(numCorrect);
         num += numCorrect;
 
-        if (numCorrect >= def.length) {
+        if (num >= def.length) {
             const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
             wordCountText.innerHTML = `Words: ${wordCount + 1}`;
             submitTyped(def, term, username, response);
