@@ -334,95 +334,32 @@ const newWord = (username, response) => {
             termFontSize = 70;
         }
 
-        typing(defFurigana, termFurigana, username, response);
+        typing(num, defFurigana, termFurigana, username, response);
     });
 }
 
-let composing = false;
-let composed = '';
-let num = 0;
-
-const updateDefOutput = (numCorrect, def) => {
-    const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, numCorrect)}</span>`;
-    const notYet = `<span style="color: #1fd755;" id="notYet">${def.substring(numCorrect)}</span>`;
-    defText.innerHTML = typedOut + notYet;
-};
-
-const updateDefOutputWrong = (numCorrect, def) => {
-    const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, numCorrect)}</span>`;
-    const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(numCorrect)}</span>`;
-    defText.innerHTML = typedOut + notYet;
-};
-
-const typing = (def, term, username, response) => {
-    typingInput.addEventListener("compositionend", (event) => {
-        console.log(num);
-        console.log("not composing");
-        const typed = event.target.value;
-        composed = "";
-        composing = false;
-
-        let numCorrect = num;
-        for (let i = num; i < typed.length + num; i++) {
-            if (typed.charAt(i - num) === def[i]) {
-                numCorrect++;
-            } else {
-                updateDefOutputWrong(numCorrect, def);
-                return;
-            }
-        }
-
-        updateDefOutput(numCorrect, def);
-        num += numCorrect;
-
-        if (num >= def.length) {
-            const wordCount = parseInt(wordCountText.textContent.split(": ")[1]);
-            wordCountText.innerHTML = `Words: ${wordCount + 1}`;
-            submitTyped(def, term, username, response);
-            newWord(username, response);
-            num = 0;
-        }
-    });
-
-    typingInput.addEventListener("input", (event) => {
-        if (composing) {
-            composed = event.data;
-            return;
-        }
-
-        if (event.inputType === "insertText" && event.data === def[num]) {
+const typing = (num, def, term, username, response) => {
+    typingInput.addEventListener("input", function(event) {
+        if (event.inputType === "insertText" && event.data === def[num])
+        {
             console.log(event.data);
             num++;
-            updateDefOutput(num, def);
+            const typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
+            const notYet = "<span style='color: #1fd755;' id='notYet'>" + def.substring(num) + "</span>";
+            document.querySelector("#def").innerHTML = typedOut + notYet;
             if (num >= def.length) {
-                const wordCount = parseInt(wordCountText.textContent.split(": ")[1]);
-                wordCountText.innerHTML = `Words: ${wordCount + 1}`;
+                const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
+                wordCountText.innerHTML = `Words: ${wordCount+1}`;
                 submitTyped(def, term, username, response);
                 newWord(username, response);
-                num = 0;
             }
-        } else if (
-            event.inputType === "deleteContentBackward" &&
-            composed === ""
-        ) {
-            num = Math.max(num - 1, 0);
-            updateDefOutput(num, def);
-        } else if (
-            event.inputType !== "historyUndo" &&
-            event.inputType !== "historyRedo" &&
-            !composing
-        ) {
-            const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(
-                0,
-                num
-            )}</span>`;
-            const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(
-                num
-            )}</span>`;
-            defText.innerHTML = typedOut + notYet;
+        } else {
+            const typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
+            const notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
+            document.querySelector("#def").innerHTML = typedOut + notYet;
         }
     });
-};
+}
 
 const submitTyped = (def, term, username, response) => {
     const xhr = new XMLHttpRequest();
