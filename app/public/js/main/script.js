@@ -88,7 +88,6 @@ const loading = () => {
     gameSection.style.display = 'none';
     loginSection.style.display = 'none';
     menuToggle.style.display = 'none';
-
     const quizlet = localStorage.getItem("quizlet");
     let quizlet_id_match;
     let quizlet_id = '';
@@ -96,7 +95,6 @@ const loading = () => {
         quizlet_id_match = localStorage.getItem("quizlet").match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
         quizlet_id = quizlet_id_match[1];
     }
-
     loadingInterval = setInterval(() => {
         loadingText.textContent += '.';
         const startTime = performance.now();
@@ -118,14 +116,12 @@ const loading = () => {
         }
     }, 15000);
 }
-
 const getUsername = async () => {
     loading();
     const auth_token = document.cookie
         .split('; ')
         .find(row => row.startsWith('auth_token='))
         ?.split('=')[1];
-
     if (auth_token) {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/auth');
@@ -153,17 +149,14 @@ const getUsername = async () => {
         console.log('No auth token found in cookie.');
     }
 }
-
 const setVisualViewport = () => {
     const vv = window.visualViewport;
     const root = document.documentElement;
     root.style.setProperty('--vvw', `${vv.width}px`);
     root.style.setProperty('--vvh', `${vv.height}px`);
-
     const linkHeight = linkText.clientHeight;
     const windowHeight = vv.height;
     const keyboardHeight = windowHeight - vv.innerHeight;
-
     if (keyboardHeight > 0) {
         linkText.style.bottom = `${keyboardHeight + linkHeight}px`;
     } else {
@@ -172,7 +165,6 @@ const setVisualViewport = () => {
 }
 setVisualViewport();
 window.visualViewport.addEventListener('resize', setVisualViewport)
-
 const startGame = async (username, response) => {
     console.log(username);
     console.log(response);
@@ -192,7 +184,6 @@ const startGame = async (username, response) => {
         newWord(username, response);
     }, 1500);
 }
-
 const login = () => {
     submitButton.disabled = true;
     const username = usernameInput.value;
@@ -313,91 +304,122 @@ const newWord = (username, response) => {
     defText.textContent = def;
     titleHTML.textContent += ' - ' + response.quizlet_title;
     typingInput.focus();
-    furigana(term, (term) => {
-        termText.innerHTML = term;
-        updateFurigana();
+    const termPromise = new Promise((resolve, reject) => {
+        furigana(term, (term) => {
+            resolve(term);
+        });
     });
 
-    let termFontSize = 70;
-    let defFontSize = 120;
+    const defPromise = new Promise((resolve, reject) => {
+        furigana(def, (def) => {
+            resolve(def);
+        });
+    });
 
-    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
-        defFontSize--;
-        defText.style.fontSize = `${defFontSize}px`;
-        defFontSize = 120;
-    }
+    Promise.all([termPromise, defPromise]).then(([termFurigana, defFurigana]) => {
+        termText.innerHTML = termFurigana;
+        defText.innerHTML = defFurigana;
 
-    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
-        termFontSize--;
-        termText.style.fontSize = `${termFontSize}px`;
-        termFontSize = 70;
-    }
+        let termFontSize = 70;
+        let defFontSize = 120;
 
-    typing(num, def, term, username, response);
+        while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+            defFontSize--;
+            defText.style.fontSize = `${defFontSize}px`;
+            defFontSize = 120;
+        }
+
+        while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
+            termFontSize--;
+            termText.style.fontSize = `${termFontSize}px`;
+            termFontSize = 70;
+        }
+
+        typing(defFurigana, termFurigana, username, response);
+    });
 }
 
 let composing = false;
 let composed = '';
+let num = 0;
 
-const typing = (num, def, term, username, response) => {
-    const updateDefOutput = (numCorrect) => {
-        const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, numCorrect)}</span>`;
-        const notYet = `<span style="color: #1fd755;" id="notYet">${def.substring(numCorrect)}</span>`;
-        defText.innerHTML = typedOut + notYet;
-    }
+const updateDefOutput = (numCorrect, def) => {
+    const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, numCorrect)}</span>`;
+    const notYet = `<span style="color: #1fd755;" id="notYet">${def.substring(numCorrect)}</span>`;
+    defText.innerHTML = typedOut + notYet;
+};
 
-    typingInput.addEventListener('compositionend', (event) => {
+const updateDefOutputWrong = (numCorrect, def) => {
+    const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, numCorrect)}</span>`;
+    const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(numCorrect)}</span>`;
+    defText.innerHTML = typedOut + notYet;
+};
+
+const typing = (def, term, username, response) => {
+    typingInput.addEventListener("compositionend", (event) => {
         console.log(num);
-        console.log('not composing');
+        console.log("not composing");
         const typed = event.target.value;
-        composed = '';
+        composed = "";
         composing = false;
 
         let numCorrect = num;
-        for (let i = num; i < (typed.length + num); i++) {
+        for (let i = num; i < typed.length + num; i++) {
             if (typed.charAt(i - num) === def[i]) {
                 numCorrect++;
-                updateDefOutput(numCorrect);
             } else {
-                const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, i)}</span>`;
-                const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(i)}</span>`;
-                defText.innerHTML = typedOut + notYet;
-                break;
+                updateDefOutputWrong(numCorrect, def);
+                return;
             }
         }
-        console.log(numCorrect);
+
+        updateDefOutput(numCorrect, def);
         num += numCorrect;
 
         if (num >= def.length) {
-            const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
+            const wordCount = parseInt(wordCountText.textContent.split(": ")[1]);
             wordCountText.innerHTML = `Words: ${wordCount + 1}`;
             submitTyped(def, term, username, response);
             newWord(username, response);
+            num = 0;
         }
     });
 
-    typingInput.addEventListener('input', (event) => {
+    typingInput.addEventListener("input", (event) => {
         if (composing) {
             composed = event.data;
             return;
         }
 
-        if (event.inputType === 'insertText' && event.data === def[num]) {
+        if (event.inputType === "insertText" && event.data === def[num]) {
             console.log(event.data);
             num++;
-            updateDefOutput(num);
+            updateDefOutput(num, def);
             if (num >= def.length) {
-                const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
-                wordCountText.innerHTML = `Words: ${wordCount+1}`;
+                const wordCount = parseInt(wordCountText.textContent.split(": ")[1]);
+                wordCountText.innerHTML = `Words: ${wordCount + 1}`;
                 submitTyped(def, term, username, response);
                 newWord(username, response);
+                num = 0;
             }
-        } else if (event.inputType === 'deleteContentBackward' && composed === '') {
+        } else if (
+            event.inputType === "deleteContentBackward" &&
+            composed === ""
+        ) {
             num = Math.max(num - 1, 0);
-            updateDefOutput(num);
-        } else if (event.inputType !== 'historyUndo' && event.inputType !== 'historyRedo' && !composing) {
-            const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(0, num)}</span>`;
-            const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(num)}</span>`;
+            updateDefOutput(num, def);
+        } else if (
+            event.inputType !== "historyUndo" &&
+            event.inputType !== "historyRedo" &&
+            !composing
+        ) {
+            const typedOut = `<span style="color: grey;" id="typedOut">${def.substring(
+                0,
+                num
+            )}</span>`;
+            const notYet = `<span style="color: #e06c75;" id="notYet">${def.substring(
+                num
+            )}</span>`;
             defText.innerHTML = typedOut + notYet;
         }
     });
@@ -460,16 +482,25 @@ const displayHistory = (response) => {
     for (let i = 0; i < history.length; i++) {
         const term = history[i].term;
         const def = history[i].def;
-        const promise = new Promise((resolve, reject) => {
-            furigana(term, (term) => {
-                resolve(`<tr><td>${def}:</td><td>${term}</td></tr>`);
+        const termPromise = new Promise((resolve, reject) => {
+            furigana(term, (termWithFurigana) => {
+                resolve(termWithFurigana);
             });
         });
-        promises.push(promise);
+        const defPromise = new Promise((resolve, reject) => {
+            furigana(def, (defWithFurigana) => {
+                resolve(defWithFurigana);
+            });
+        });
+        promises.push(Promise.all([termPromise, defPromise]));
     }
 
     Promise.all(promises).then((results) => {
-        historyHTML += results.join('');
+        for (let i = 0; i < results.length; i++) {
+            const termWithFurigana = results[i][0];
+            const defWithFurigana = results[i][1];
+            historyHTML += `<tr><td>${defWithFurigana}:</td><td>${termWithFurigana}</td></tr>`;
+        }
         historyHTML += '</tbody></table>';
         historyDIV.innerHTML = historyHTML;
         updateFurigana();
@@ -498,10 +529,29 @@ const addLinks = (username, quizlet_id) => {
 
 const addHistoryDisplay = (term, def) => {
     const newRow = document.createElement('tr');
-    furigana(term, (term) => {
-        newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
+    let termFurigana;
+    let defFurigana;
+
+    const termPromise = new Promise((resolve, reject) => {
+        furigana(term, (result) => {
+            termFurigana = result;
+            resolve();
+        });
+    });
+
+    const defPromise = new Promise((resolve, reject) => {
+        furigana(def, (result) => {
+            defFurigana = result;
+            resolve();
+        });
+    });
+
+    Promise.all([termPromise, defPromise]).then(() => {
+        newRow.innerHTML = `<td>${defFurigana}:</td><td>${termFurigana}</td>`;
         historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
         addWordCountDisplay();
+    }).catch((error) => {
+        console.error(error);
     });
 }
 
@@ -511,9 +561,9 @@ const addWordCountDisplay = () => {
     updateFurigana();
 }
 
-const furigana = (term, callback) => {
+const furigana = (word, callback) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `${address}/get/furigana?term=${term}`);
+    xhr.open('GET', `${address}/get/furigana?word=${word}`);
     xhr.onload = function() {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);

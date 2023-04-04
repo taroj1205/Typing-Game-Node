@@ -352,17 +352,17 @@ app.get('/get/history', async (req, res) => {
 });
 
 app.get('/get/furigana', async (req, res) => {
-    const { term } = req.query;
+    const { word } = req.query;
     // Check if the term has kanji
-    const result = Kuroshiro.Util.hasKanji(term);
+    const result = Kuroshiro.Util.hasKanji(word);
     if (result === true) {
-        const furigana = await kuroshiro.convert(term, {mode:"furigana", to:"hiragana"});
+        const furigana = await kuroshiro.convert(word, {mode:"furigana", to:"hiragana"});
         console.log(furigana);
         await logMessage('Getting Furigana...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
         res.json({ furigana });
     }
     else {
-        res.json({ furigana: term });
+        res.json({ furigana: word });
         await logMessage('Sending back term with no furigana...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     }
 });
