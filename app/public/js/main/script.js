@@ -273,7 +273,6 @@ let lastIndex = 0;
 
 const newWord = (username, response) => {
     let num = 0;
-    typingInput.value = '';
     const termLength = response.term.length;
     const defLength = response.def.length;
     const maxIndex = Math.max(termLength, defLength) - 1;
@@ -303,40 +302,33 @@ const newWord = (username, response) => {
     defText.textContent = def;
     titleHTML.textContent += ' - ' + response.quizlet_title;
     typingInput.focus();
-    const termPromise = new Promise((resolve, reject) => {
-        furigana(term, (term) => {
-            resolve(term);
-        });
-    });
 
-    const defPromise = new Promise((resolve, reject) => {
-        furigana(def, (def) => {
-            resolve(def);
-        });
-    });
-
-    Promise.all([termPromise, defPromise]).then(([termFurigana, defFurigana]) => {
-        termText.innerHTML = termFurigana;
-        defText.innerHTML = defFurigana;
-
+    furigana(term, (term) => {
+        termText.innerHTML = term;
         updateFurigana();
-        let termFontSize = 70;
-        let defFontSize = 120;
-
-        while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
-            defFontSize--;
-            defText.style.fontSize = `${defFontSize}px`;
-            defFontSize = 120;
-        }
-
-        while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
-            termFontSize--;
-            termText.style.fontSize = `${termFontSize}px`;
-            termFontSize = 70;
-        }
-
-        typing(num, defFurigana, termFurigana, username, response);
     });
+
+    furigana(def, (def) => {
+        defText.innerHTML = def;
+        updateFurigana();
+    });
+
+    let termFontSize = 70;
+    let defFontSize = 120;
+
+    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+        defFontSize--;
+        defText.style.fontSize = `${defFontSize}px`;
+        defFontSize = 120;
+    }
+
+    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
+        termFontSize--;
+        termText.style.fontSize = `${termFontSize}px`;
+        termFontSize = 70;
+    }
+
+    typing(num, def, term, username, response);
 }
 
 const typing = (num, def, term, username, response) => {
@@ -494,7 +486,6 @@ const furigana = (word, callback) => {
     xhr.onerror = function() {
         console.error(xhr.statusText);
         console.error('Request failed.');
-        termText.textContent = term;
     };
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send();
