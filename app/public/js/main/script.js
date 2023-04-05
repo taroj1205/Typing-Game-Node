@@ -181,6 +181,7 @@ const startGame = async (username, response) => {
         quizlet_id = response.quizlet_id;
         submitButton.disabled = false;
         addLinks(username, quizlet_id);
+        playtime.start();
         newWord(username, response);
     }, 1500);
 }
@@ -235,7 +236,6 @@ const getWords = (username) => {
         if (cacheAge < CACHE_DURATION) {
             console.log(cachedResponse.data.quizlet_title);
             startGame(username, cachedResponse.data);
-            return;
         }
     }
 
