@@ -319,13 +319,11 @@ const newWord = (username, response) => {
     while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
         defFontSize--;
         defText.style.fontSize = `${defFontSize}px`;
-        defFontSize = 120;
     }
 
     while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
         termFontSize--;
         termText.style.fontSize = `${termFontSize}px`;
-        termFontSize = 70;
     }
 
     typing(num, def, term, username, response);
