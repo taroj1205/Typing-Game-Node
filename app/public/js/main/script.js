@@ -319,6 +319,7 @@ const newWord = (username, response) => {
         termText.innerHTML = termFurigana;
         defText.innerHTML = defFurigana;
 
+        updateFurigana();
         let termFontSize = 70;
         let defFontSize = 120;
 
@@ -465,30 +466,9 @@ const addLinks = (username, quizlet_id) => {
 
 const addHistoryDisplay = (term, def) => {
     const newRow = document.createElement('tr');
-    let termFurigana;
-    let defFurigana;
-
-    const termPromise = new Promise((resolve, reject) => {
-        furigana(term, (result) => {
-            termFurigana = result;
-            resolve();
-        });
-    });
-
-    const defPromise = new Promise((resolve, reject) => {
-        furigana(def, (result) => {
-            defFurigana = result;
-            resolve();
-        });
-    });
-
-    Promise.all([termPromise, defPromise]).then(() => {
-        newRow.innerHTML = `<td>${defFurigana}:</td><td>${termFurigana}</td>`;
-        historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
-        addWordCountDisplay();
-    }).catch((error) => {
-        console.error(error);
-    });
+    newRow.innerHTML = `<td>${def}:</td><td>${term}</td>`;
+    historyDIV.querySelector('tbody').insertAdjacentElement('afterbegin', newRow);
+    addWordCountDisplay();
 }
 
 const addWordCountDisplay = () => {
