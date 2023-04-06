@@ -236,6 +236,7 @@ const getWords = (username) => {
         if (cacheAge < CACHE_DURATION) {
             console.log(cachedResponse.data.quizlet_title);
             startGame(username, cachedResponse.data);
+            return;
         }
     }
 
@@ -271,7 +272,7 @@ const getWords = (username) => {
 let randomIndex = 0;
 let lastIndex = 0;
 
-const newWord = (username, response) => {
+const newWord = async (username, response) => {
     let num = 0;
     const termLength = response.term.length;
     const defLength = response.def.length;
@@ -300,15 +301,15 @@ const newWord = (username, response) => {
 
     termText.textContent = term;
     defText.textContent = def;
-    titleHTML.textContent += ' - ' + response.quizlet_title;
+    titleHTML.textContent = 'タイピングゲーム風単語学習 - ' + response.quizlet_title;
     typingInput.focus();
 
-    furigana(term, (term) => {
+    await furigana(term, (term) => {
         termText.innerHTML = term;
         updateFurigana();
     });
 
-    furigana(def, (def) => {
+    await furigana(def, (def) => {
         defText.innerHTML = def;
         updateFurigana();
     });
@@ -330,6 +331,7 @@ const newWord = (username, response) => {
 }
 
 const typing = (num, def, term, username, response) => {
+    console.log('def: ' + def);
     typingInput.addEventListener("input", function(event) {
         if (event.inputType === "insertText" && event.data === def[num])
         {
