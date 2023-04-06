@@ -344,6 +344,7 @@ const typing = (num, def, term, username, response) => {
                 const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
                 wordCountText.innerHTML = `Words: ${wordCount+1}`;
                 submitTyped(def, term, username, response);
+                sendPlaytime(username);
                 newWord(username, response);
             }
         } else {
@@ -589,9 +590,8 @@ const getNewQuizletData = () => {
     }
 }
 
-const sendPlaytime = () => {
+const sendPlaytime = (username) => {
     playtime.stop();
-    const username = usernameInput.value;
     const playtimeInMilliseconds = calculatePlaytimeInMilliseconds();
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${address}/post/playtime`);
@@ -605,11 +605,13 @@ const sendPlaytime = () => {
         } else {
             console.error(xhr.statusText);
             console.error('Request failed.');
+            playtime.start();
         }
     };
     xhr.onerror = function () {
         console.error(xhr.statusText);
         console.error('Request failed.');
+        playtime.start();
     };
     xhr.send(JSON.stringify({
         username: username,
@@ -659,8 +661,9 @@ function getAuthToken() {
 
 toggleFurigana.addEventListener("click", furiganaSetting);
 
-window.onbeforeunload = function () {
-    sendPlaytime();
+window.onbeforeunload = async function () {
+    const username = await getUsername();
+    sendPlaytime(username);
 }
 
 logoutButton.addEventListener("click", () => {

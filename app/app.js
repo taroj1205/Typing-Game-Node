@@ -363,7 +363,7 @@ app.get('/get/furigana', async (req, res) => {
     }
     else {
         res.json({ furigana: word });
-        await logMessage('Sending back term with no furigana...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
+        await logMessage('Sending back word with no furigana...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
     }
 });
 
