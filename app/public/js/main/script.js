@@ -84,19 +84,22 @@ window.onload = async () => {
 }
 
 const loading = () => {
+    loadingText.textContent = 'Loading...';
     loadingSection.style.display = 'block';
     gameSection.style.display = 'none';
     loginSection.style.display = 'none';
     menuToggle.style.display = 'none';
+    /*
     const quizlet = localStorage.getItem("quizlet");
     let quizlet_id_match;
     let quizlet_id = '';
     if (quizlet) {
         quizlet_id_match = localStorage.getItem("quizlet").match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
         quizlet_id = quizlet_id_match[1];
-    }
+    }*/
     loadingInterval = setInterval(() => {
         loadingText.textContent += '.';
+        /*
         const startTime = performance.now();
         const pingUrl = `https://quizlet.com/${quizlet_id}/`;
         fetch(pingUrl, { method: 'HEAD', mode: 'no-cors' }).then(() => {
@@ -106,6 +109,7 @@ const loading = () => {
         }).catch((error) => {
             console.log(error);
         });
+        */
     }, 1000);
     setTimeout(() => {
         if (loadingSection.style.display === 'block') {
@@ -172,6 +176,7 @@ const startGame = async (username, response) => {
     setTimeout(() => {
         clearInterval(loadingInterval);
         loadingSection.style.display = 'none';
+        loadingText.textContent = 'Loading...';
         menuToggle.style.display = 'block';
         loginSection.style.display = 'none';
         gameSection.style.display = 'block';
