@@ -59,6 +59,7 @@ const playtime = new Playtime();
 
 window.onload = async () => {
     loadingSection.style.display = 'block';
+    loading();
     loginSection.style.display = 'none';
     gameSection.style.display = 'none';
     statsSection.style.display = 'none';
