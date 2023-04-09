@@ -461,7 +461,7 @@ const addLinks = (username, quizlet_id) => {
     linkText.appendChild(leaderboardLink);
 
     const profileLink = document.createElement('a');
-    profileLink.href = `${address}/profile/?user=${username}`;
+    profileLink.href = `${address}/profile?user=${username}`;
     profileLink.textContent = 'Profile';
     profileLink.target = '_blank'; // Open link in a new tab
     linkText.appendChild(profileLink);

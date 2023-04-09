@@ -4,3 +4,4 @@ data
 userData
 node_modules
 /app/log/
+.vscode/launch.json
