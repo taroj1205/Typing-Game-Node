@@ -80,7 +80,10 @@ window.onload = async () => {
         console.log("Hiding furigana.");
         hideFurigana();
     }
-    await getUsername();
+
+    const username = await getUsername();
+    console.log(username);
+    getWords(username);
 }
 
 const loading = () => {
@@ -121,38 +124,32 @@ const loading = () => {
     }, 15000);
 }
 const getUsername = async () => {
-    loading();
     const auth_token = document.cookie
         .split('; ')
         .find(row => row.startsWith('auth_token='))
         ?.split('=')[1];
+
     if (auth_token) {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/auth');
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                console.log('Auth token matched successfully.');
-                const response = JSON.parse(xhr.responseText);
-                const username = response.username;
-                getWords(username);
-            } else {
-                console.log('Error sending auth token:', xhr.statusText);
-            }
-        };
-        xhr.onerror = function() {
-            console.error('Error sending auth token:', xhr.statusText);
-            loadingSection.style.display = 'none';
-            submitButton.disabled = false;
-        };
-        xhr.send(JSON.stringify({ auth_token }));
+        const response = await fetch('/auth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ auth_token })
+        });
+        if (response.ok) {
+            const { username } = await response.json();
+            return username;
+        } else {
+            console.error('Error sending auth token:', response.statusText);
+        }
     } else {
-        loadingSection.style.display = 'none';
-        loginSection.style.display = 'block';
-        submitButton.disabled = false;
         console.log('No auth token found in cookie.');
     }
+    return null;
 }
+
+
 const setVisualViewport = () => {
     const vv = window.visualViewport;
     const root = document.documentElement;
@@ -586,7 +583,6 @@ const getNewQuizletData = () => {
         submitButton.disabled = false;
         quizletLinkSettings.style.borderColor = '';
         menuToggle.click();
-        getUsername();
     } else {
         submitQuizletButton.disabled = false;
         quizletLinkSettings.style.borderColor = 'red';
@@ -666,10 +662,25 @@ function getAuthToken() {
 
 toggleFurigana.addEventListener("click", furiganaSetting);
 
-window.onbeforeunload = async function () {
+window.addEventListener('beforeunload', async function (event) {
     const username = await getUsername();
-    sendPlaytime(username);
-}
+    console.log(username);
+    if (username) {
+        await sendPlaytime(username);
+    }
+});
+
+window.onbeforeunload = async function (e) {
+    e = e || window.event;
+
+    // For IE and Firefox prior to version 4
+    if (e) {
+        e.returnValue = 'Sure?';
+    }
+
+    // For Safari
+    return 'Sure?';
+};
 
 logoutButton.addEventListener("click", () => {
     document.cookie = 'auth_token=;';

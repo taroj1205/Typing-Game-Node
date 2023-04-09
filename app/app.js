@@ -51,7 +51,7 @@ function getTimestamp() {
 async function generateAuthToken(db, username) {
     const timeNow = getTimestamp();
     const timeZone = 'Pacific/Auckland';
-    const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Expire after 7 days
     const options = {
         timeZone,
         year: 'numeric',
@@ -65,10 +65,16 @@ async function generateAuthToken(db, username) {
     const expirationDate = date.toLocaleString('en-US', options).replace(',', '');
     console.log(timeNow); // Output: "2023-03-29 08:15:30"
 
-    // check if the generated token already exists in the database
-    let authToken = await getUniqueAuthToken(db);
+    // Generate a random authentication token
+    const authToken = await getUniqueAuthToken();
 
-    await queryDb(db, `UPDATE users SET auth_token = ?, auth_token_expiration = ?, last_login_at = ? WHERE username = ?`, [authToken, expirationDate, timeNow, username]);
+    console.log(authToken);
+
+    // Hash the authentication token
+    const hashedAuthToken = await bcrypt.hash(authToken, 10);
+
+    // Save the hashed authentication token and expiration date to the database
+    await queryDb(db, `UPDATE users SET auth_token = ?, auth_token_expiration = ?, last_login_at = ? WHERE username = ?`, [hashedAuthToken, expirationDate, timeNow, username]);
     console.log("Generated auth token.");
     await logMessage('Generating auth token...', 'info');
     try {
@@ -79,7 +85,7 @@ async function generateAuthToken(db, username) {
     return { authToken, expirationDate };
 }
 
-async function getUniqueAuthToken(db) {
+async function getUniqueAuthToken() {
     const authToken = uuid.v4();
     const existingUser = await queryDb(db, `SELECT auth_token, auth_token_expiration FROM users WHERE auth_token = ?`, [authToken]);
 
@@ -90,36 +96,45 @@ async function getUniqueAuthToken(db) {
             return { authToken: existingUser.auth_token, expirationDate };
         }
     }
-
-    return { authToken, expirationDate: null };
+    return authToken;
 }
 
-async function authenticateUser(db, authToken) {
+async function authenticateUser(token) {
     try {
-        const rows = await queryDb(db, `SELECT username FROM users WHERE auth_token = ?`, [authToken]);
-        const username = rows[0].username;
+        const rows = await queryDb(db, `SELECT auth_token, username FROM users`);
+        console.log(rows);
+        let username = null;
+        for (const row of rows) {
+            const match = await bcrypt.compare(token, row.auth_token);
+            if (match) {
+                username = row.username;
+                break;
+            }
+        }
+        if (!username) {
+            throw new Error('Invalid token');
+        }
         const timeNow = getTimestamp();
         console.log(timeNow);
-        await queryDb(db, `UPDATE users SET last_login_at = ? WHERE username = ?`, [ timeNow, username]);
+        await queryDb(db, `UPDATE users SET last_login_at = ? WHERE username = ?`, [timeNow, username]);
         console.log(`User ${username} authenticated successfully.`);
         return username;
     } catch (err) {
-        console.log('Authentication failed: invalid or expired token.');
+        console.log('Authentication failed:', err.message);
         return null;
     }
-    await logMessage('Authenticating user token...', 'info');
 }
 
 app.post('/auth', async (req, res) => {
-    const authToken = req.body.auth_token;
-    console.log(authToken);
-    const username = await authenticateUser(db, authToken);
+    const token = req.body.auth_token;
+    console.log(token);
+    const username = await authenticateUser(token);
+    console.log(username);
     if (username) {
         res.json({ success: true, message: 'Authentication successful', username: username });
     } else {
         res.status(401).json({ success: false, message: 'Authentication failed' });
     }
-
 });
 
 app.post('/login', async (req, res) => {
@@ -177,9 +192,15 @@ async function validateCredentials(db, user, username, password) {
         const hashedPassword = await bcrypt.hash(password, 10);
         const timeNow = getTimestamp();
         console.log(timeNow); // Output: "2023-03-29 08:15:30"
-        db.run(`INSERT OR IGNORE INTO users (username, password, created_at) VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
+        db.run(`INSERT OR IGNORE INTO users (username, password, created_at)
+                VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
         console.log("Created new account.");
-        await logMessage('Creating New Account...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
+        await logMessage('Creating New Account...', 'info');
+        try {
+            const result = 1 / 0;
+        } catch (error) {
+            await logMessage(error.message, 'error');
+        }
     } else {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
@@ -188,9 +209,16 @@ async function validateCredentials(db, user, username, password) {
         } else {
             const timeNow = getTimestamp();
             console.log(timeNow); // Output: "2023-03-29 08:15:30"
-            db.run(`UPDATE users SET last_login_at = ? WHERE username = ?`, [timeNow, username]);
+            db.run(`UPDATE users
+                    SET last_login_at = ?
+                    WHERE username = ?`, [timeNow, username]);
             console.log("Updated last login time.");
-            await logMessage('Updating last login time...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
+            await logMessage('Updating last login time...', 'info');
+            try {
+                const result = 1 / 0;
+            } catch (error) {
+                await logMessage(error.message, 'error');
+            }
         }
     }
 }
