@@ -83,7 +83,9 @@ window.onload = async () => {
 
     const username = await getUsername();
     console.log(username);
-    getWords(username);
+    if (username) {
+        getWords(username);
+    }
 }
 
 const loading = () => {
@@ -382,6 +384,7 @@ const submitTyped = (def, term, username, response) => {
 }
 
 const getHistory = async (username, response) => {
+    console.log(username);
     username = username.trim();
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
