@@ -86,6 +86,10 @@ window.onload = async () => {
     if (username) {
         getWords(username);
     }
+    else {
+        loadingSection.style.display = 'none';
+        loginSection.style.display = 'block';
+    }
 }
 
 const loading = () => {
