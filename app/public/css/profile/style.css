@@ -9,7 +9,8 @@ body {
     color: #ffffff;
     font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
     height: 100%;
-    width: 90%;
+    width: 100%;
+    margin: 0 0;
 }
 
 h1, h2 {
@@ -21,11 +22,15 @@ a {
     color: #3b88f5;
 }
 
+section#graph {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
 div {
     display: block;
     margin: 0 auto 20px;
     position: relative;
-    max-width: 700px;
     width: 100%;
 }
 
