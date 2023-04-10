@@ -187,7 +187,7 @@ const startGame = async (username, response) => {
         statsSection.style.display = 'block';
         typingInput.style.display = 'block';
         gameTitle.textContent = response.quizlet_title;
-        quizlet_id = response.quizlet_id;
+        let quizlet_id = response.quizlet_id;
         submitButton.disabled = false;
         addLinks(username, quizlet_id);
         playtime.start();

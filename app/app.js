@@ -397,43 +397,79 @@ app.get('/get/furigana', async (req, res) => {
 
 app.get('/leaderboard', async (req, res) => {
     const quizlet_id = req.query.quizlet_id;
+    console.log(quizlet_id);
     checkAndCreateDir();
     try {
-        const [result] = await queryDb(db, 'SELECT quizlet_title FROM quizlet WHERE quizlet_id = ?', [quizlet_id]);
-        const quizlet_title = result.quizlet_title;
-        const rows = await queryDb(db, 'SELECT user_id, COUNT(*) AS word_count FROM history WHERE quizlet_id = ? GROUP BY user_id ORDER BY word_count DESC', [quizlet_id]);
+        if (req.query.quizlet_id === undefined) {
+            let html = `<!DOCTYPE html><html><head><title>Leaderboard - Playtime</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/leaderboard/style.css" /></head><body>`;
+            html += `<h1>Leaderboard - Playtime</h1>`;
+            html += '<ol>';
+            const [ row ] = (await queryDb(db, `SELECT playtime, user_id FROM playtime`));
+            if (!row) return 0;
+            console.log(row);
+            const [ user ] = (await queryDb(db, `SELECT id, username FROM users`));
+            console.log(user);
+            if (!user) return 0;
+            let playtime;
+            let i = 0;
+            while (i < user.id) {
+                await formatDuration(row.playtime)
+                    .then((formattedTime) => {
+                        playtime = formattedTime;
+                        html += `<li>${user.username}: ${formattedTime}</li>`;
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
+                i++;
+            }
+            console.log("Sending ", html);
+            res.header('Content-Type', 'text/html');
+            res.send(`${html}</body></html>`);
+        } else {
+            const [result] = await queryDb(db, 'SELECT quizlet_title FROM quizlet WHERE quizlet_id = ?', [quizlet_id]);
+            const quizlet_title = result.quizlet_title;
+            const rows = await queryDb(db, 'SELECT user_id, COUNT(*) AS word_count FROM history WHERE quizlet_id = ? GROUP BY user_id ORDER BY word_count DESC', [quizlet_id]);
 
-        const userIds = rows.map(row => row.user_id);
-        const userRows = await queryDb(db, `SELECT id, username FROM users WHERE id IN (${userIds.map(() => '?').join(',')})`, userIds);
-        const topRows = rows.slice(0, 10);
-        const topUsernames = topRows.map(row => userRows.find(user => user.id === row.user_id).username);
-        const topWordCounts = topRows.map(row => row.word_count);
-        const rankList = topRows.map((row, index) => ({
-            username: topUsernames[index],
-            word_count: row.word_count,
-            profile_url: `/profile?user=${topUsernames[index]}`
-        }));
+            const userIds = rows.map(row => row.user_id);
+            const userRows = await queryDb(db, `SELECT id, username
+                                                FROM users
+                                                WHERE id IN (${userIds.map(() => '?').join(',')})`, userIds);
+            const topRows = rows.slice(0, 10);
+            const topUsernames = topRows.map(row => userRows.find(user => user.id === row.user_id).username);
+            const topWordCounts = topRows.map(row => row.word_count);
+            const rankList = topRows.map((row, index) => ({
+                username: topUsernames[index],
+                word_count: row.word_count,
+                profile_url: `/profile?user=${topUsernames[index]}`
+            }));
 
-        const labels = JSON.stringify(topUsernames);
-        const data = JSON.stringify(topWordCounts);
+            const labels = JSON.stringify(topUsernames);
+            const data = JSON.stringify(topWordCounts);
 
-        const templatePath = path.join(__dirname, 'public', 'html', 'leaderboard', 'index.html')
-        const templateSource = fs.readFileSync(templatePath, 'utf8');
-        const template = handlebars.compile(templateSource);
-        const html = template({
-            quizlet_title,
-            quizlet_id,
-            rankList,
-            labels,
-            data,
-        });
-        console.log(quizlet_title);
-        console.log(rankList);
-        console.log(labels);
-        console.log(data);
-        res.header('Content-Type', 'text/html');
-        res.send(html);
-        await logMessage('Sending Leaderboard...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
+            const templatePath = path.join(__dirname, 'public', 'html', 'leaderboard', 'index.html')
+            const templateSource = fs.readFileSync(templatePath, 'utf8');
+            const template = handlebars.compile(templateSource);
+            const html = template({
+                quizlet_title,
+                quizlet_id,
+                rankList,
+                labels,
+                data,
+            });
+            console.log(quizlet_title);
+            console.log(rankList);
+            console.log(labels);
+            console.log(data);
+            res.header('Content-Type', 'text/html');
+            res.send(html);
+            await logMessage('Sending Leaderboard...', 'info');
+            try {
+                const result = 1 / 0;
+            } catch (error) {
+                await logMessage(error.message, 'error');
+            }
+        }
     } catch (err) {
         console.error(err.message);
         let html = `<!DOCTYPE html><html><head><title>Leaderboard - ${quizlet_id}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/leaderboard/style.css" /></head><body>`;

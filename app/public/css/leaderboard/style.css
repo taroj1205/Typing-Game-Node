@@ -18,3 +18,8 @@ a {
 canvas {
     background-color: #ffffff;
 }
+
+h2 {
+    background-color: red;
+    width: 10ch;
+}

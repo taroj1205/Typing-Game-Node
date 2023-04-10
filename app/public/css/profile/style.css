@@ -37,3 +37,7 @@ div {
 canvas {
     background-color: #ffffff;
 }
+
+#playtime {
+    background-color: red;
+}
