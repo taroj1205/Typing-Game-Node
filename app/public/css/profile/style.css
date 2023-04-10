@@ -9,7 +9,7 @@ body {
     color: #ffffff;
     font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
     height: 100%;
-    width: calc(var(--vvw) - 50px);
+    width: 90%;
 }
 
 h1, h2 {
@@ -26,14 +26,9 @@ div {
     margin: 0 auto 20px;
     position: relative;
     max-width: 700px;
+    width: 100%;
 }
 
 canvas {
     background-color: #ffffff;
-}
-
-@media screen and (max-width: 600px) {
-    div {
-        width: var(--vvw);
-    }
 }
