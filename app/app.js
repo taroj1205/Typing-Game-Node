@@ -404,28 +404,21 @@ app.get('/leaderboard', async (req, res) => {
             let html = `<!DOCTYPE html><html><head><title>Leaderboard - Playtime</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/leaderboard/style.css" /></head><body>`;
             html += `<h1>Leaderboard - Playtime</h1>`;
             html += '<ol>';
-            const [ row ] = (await queryDb(db, `SELECT playtime, user_id FROM playtime`));
-            if (!row) return 0;
-            console.log(row);
-            const [ user ] = (await queryDb(db, `SELECT id, username FROM users`));
-            console.log(user);
-            if (!user) return 0;
-            let playtime;
-            let i = 0;
-            while (i < user.id) {
-                await formatDuration(row.playtime)
-                    .then((formattedTime) => {
-                        playtime = formattedTime;
-                        html += `<li>${user.username}: ${formattedTime}</li>`;
-                    })
-                    .catch((error) => {
-                        console.error(error);
-                    });
-                i++;
+
+            const rows = await queryDb(db, `SELECT playtime, user_id FROM playtime ORDER BY playtime DESC`);
+            if (rows.length === 0) return 0;
+
+            for (const row of rows) {
+                const user = await queryDb(db, `SELECT username FROM users WHERE id = ?`, [row.user_id]);
+                if (!user || user.length === 0) continue;
+                const formattedTime = await formatDuration(row.playtime);
+                html += `<li>${user[0].username}: ${formattedTime}</li>`;
             }
+
+            html += '</ol></body></html>';
             console.log("Sending ", html);
             res.header('Content-Type', 'text/html');
-            res.send(`${html}</body></html>`);
+            res.send(html);
         } else {
             const [result] = await queryDb(db, 'SELECT quizlet_title FROM quizlet WHERE quizlet_id = ?', [quizlet_id]);
             const quizlet_title = result.quizlet_title;
