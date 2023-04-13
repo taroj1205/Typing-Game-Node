@@ -405,14 +405,12 @@ app.get('/leaderboard', async (req, res) => {
             html += `<h1>Leaderboard - Playtime</h1>`;
             html += '<ol>';
 
-            const rows = await queryDb(db, `SELECT playtime, user_id FROM playtime ORDER BY playtime DESC`);
+            const rows = await queryDb(db, `SELECT playtime, username FROM playtime JOIN users ON playtime.user_id = users.id ORDER BY playtime DESC`);
             if (rows.length === 0) return 0;
 
             for (const row of rows) {
-                const user = await queryDb(db, `SELECT username FROM users WHERE id = ?`, [row.user_id]);
-                if (!user || user.length === 0) continue;
                 const formattedTime = await formatDuration(row.playtime);
-                html += `<li>${user[0].username}: ${formattedTime}</li>`;
+                html += `<li>${row.username}: ${formattedTime}</li>`;
             }
 
             html += '</ol></body></html>';
