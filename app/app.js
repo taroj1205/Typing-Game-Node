@@ -411,14 +411,17 @@ app.get('/leaderboard', async (req, res) => {
 
             const leaderboard = [];
             for (const row of playtimeRows) {
-                const formattedTime = await formatDuration(row.playtime);
                 leaderboard.push({
                     username: userIdToUsername[row.user_id],
-                    playtime: formattedTime,
+                    playtime: row.playtime,
                 });
             }
 
-            leaderboard.sort((a, b) => b.playtime.localeCompare(a.playtime));
+            leaderboard.sort((a, b) => b.playtime - a.playtime);
+
+            for (const entry of leaderboard) {
+                entry.playtime = await formatDuration(entry.playtime);
+            }
 
             const templatePath = path.join(__dirname, 'public', 'html', 'leaderboard', 'index.html');
             const templateSource = fs.readFileSync(templatePath, 'utf8');
