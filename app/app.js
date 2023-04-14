@@ -418,7 +418,7 @@ app.get('/leaderboard', async (req, res) => {
                 });
             }
 
-            leaderboard.sort((a, b) => b.playtime - a.playtime); // Sort in descending order based on playtime
+            leaderboard.sort((a, b) => b.playtime - a.playtime);
 
             const templatePath = path.join(__dirname, 'public', 'html', 'leaderboard', 'index.html');
             const templateSource = fs.readFileSync(templatePath, 'utf8');
