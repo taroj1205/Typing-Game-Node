@@ -452,19 +452,68 @@ const displayHistory = (response) => {
     });
 }
 
+let currentOverlay = null;
+
 const addLinks = (username, quizlet_id) => {
     linkText.innerHTML = '';
+
     const leaderboardLink = document.createElement('a');
     leaderboardLink.href = `${address}/leaderboard?quizlet_id=${quizlet_id}`;
     leaderboardLink.textContent = 'Leaderboard';
-    leaderboardLink.target = '_blank'; // Open link in a new tab
+    leaderboardLink.onclick = function(event) {
+        event.preventDefault(); // Prevent the link from opening in a new tab
+        openOverlay(`${address}/leaderboard?quizlet_id=${quizlet_id}`);
+    };
     linkText.appendChild(leaderboardLink);
 
     const profileLink = document.createElement('a');
     profileLink.href = `${address}/profile?user=${username}`;
     profileLink.textContent = 'Profile';
-    profileLink.target = '_blank'; // Open link in a new tab
+    profileLink.onclick = function(event) {
+        event.preventDefault(); // Prevent the link from opening in a new tab
+        openOverlay(`${address}/profile?user=${username}`);
+    };
     linkText.appendChild(profileLink);
+};
+
+const openOverlay = (url) => {
+    // Remove the previous overlay
+    if (currentOverlay !== null) {
+        currentOverlay.remove();
+    }
+
+    // Create a modal overlay
+    const overlay = document.createElement('div');
+    overlay.classList.add('overlay');
+
+    // Create a close button
+    const closeButton = document.createElement('button');
+    closeButton.classList.add('close-button');
+    closeButton.innerHTML = '&times;';
+    closeButton.onclick = function() {
+        // Remove the overlay when the close button is clicked
+        overlay.remove();
+        currentOverlay = null;
+    };
+    overlay.appendChild(closeButton);
+
+    // Create an iframe to load the page
+    const iframe = document.createElement('iframe');
+    iframe.src = url;
+    overlay.appendChild(iframe);
+
+    // Add the overlay to the page
+    document.body.appendChild(overlay);
+    currentOverlay = overlay;
+
+    document.addEventListener('click', function(event) {
+        const isAnchor = Array.from(linkText.querySelectorAll('a')).some((a) => a.contains(event.target));
+        if (!isAnchor) {
+            overlay.remove();
+            currentOverlay = null;
+            document.removeEventListener('click', this);
+        }
+    });
 };
 
 const addHistoryDisplay = (term, def) => {

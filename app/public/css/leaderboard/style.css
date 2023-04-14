@@ -17,4 +17,5 @@ a {
 
 canvas {
     background-color: #ffffff;
+    max-width: 90vw;
 }

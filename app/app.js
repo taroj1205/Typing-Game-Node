@@ -17,6 +17,9 @@ const KuromojiAnalyzer = require('kuroshiro-analyzer-kuromoji');
 const kuroshiro = new Kuroshiro();
 kuroshiro.init(new KuromojiAnalyzer());
 
+console.log(process.env.APP_LISTEN_PORT);
+console.log(process.env.APP_LISTEN_IP_ADDRESS);
+
 const dataPath = path.join(__dirname, 'data');
 const db = new sqlite3.Database(path.join(dataPath, 'database.db'));
 
@@ -33,8 +36,14 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'html', 'main', 'index.html'));
 });
 
+/**
+ * Returns a formatted timestamp in the format of 'yyyy-mm-ddThh:mm:ss' for the Pacific/Auckland timezone.
+ * @returns {string} The formatted timestamp.
+ */
 function getTimestamp() {
+    // get the current date and time
     const now = new Date();
+    // set options for formatting the date and time
     const options = {
         timeZone: 'Pacific/Auckland',
         year: 'numeric',
@@ -45,13 +54,31 @@ function getTimestamp() {
         second: '2-digit',
         hour12: false
     };
-    return now.toLocaleString('ja-JP', options).replace(/\//g, '-');
+    // format the date and time using the specified options
+    const formattedDate = now.toLocaleString('ja-JP', options);
+    // replace the forward slashes with dashes to match the desired format
+    const timestamp = formattedDate.replace(/\//g, '-');
+    // return the formatted timestamp
+    return timestamp;
 }
 
+/**
+ * Generates a unique authentication token for the given user and saves it to the database.
+ * @param {Object} db - The database object.
+ * @param {string} username - The username of the user.
+ * @returns {Object} - An object containing the generated authentication token and its expiration date.
+ */
 async function generateAuthToken(db, username) {
+    // Get the current timestamp
     const timeNow = getTimestamp();
+
+    // Set the time zone
     const timeZone = 'Pacific/Auckland';
-    const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Expire after 7 days
+
+    // Set the expiration date to 7 days from now
+    const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    // Set the options for formatting the date string
     const options = {
         timeZone,
         year: 'numeric',
@@ -62,12 +89,17 @@ async function generateAuthToken(db, username) {
         second: '2-digit',
         hour12: false
     };
+
+    // Format the expiration date string
     const expirationDate = date.toLocaleString('en-US', options).replace(',', '');
+
+    // Log the current timestamp
     console.log(timeNow); // Output: "2023-03-29 08:15:30"
 
     // Generate a random authentication token
     const authToken = await getUniqueAuthToken();
 
+    // Log the generated authentication token
     console.log(authToken);
 
     // Hash the authentication token
@@ -75,54 +107,87 @@ async function generateAuthToken(db, username) {
 
     // Save the hashed authentication token and expiration date to the database
     await queryDb(db, `UPDATE users SET auth_token = ?, auth_token_expiration = ?, last_login_at = ? WHERE username = ?`, [hashedAuthToken, expirationDate, timeNow, username]);
+
+    // Log a message indicating that the authentication token has been generated
     console.log("Generated auth token.");
     await logMessage('Generating auth token...', 'info');
+
+    // Throw an error and catch it to log the error message
     try {
         const result = 1 / 0;
     } catch (error) {
         await logMessage(error.message, 'error');
     }
+
+    // Return the authentication token and its expiration date
     return { authToken, expirationDate };
 }
 
+/**
+ * Generates a unique authentication token for a user.
+ * If a user with the same token already exists and the token hasn't expired, returns that token instead.
+ * @returns {string} The generated or existing authentication token.
+ */
 async function getUniqueAuthToken() {
+    // Generate a unique authentication token
     const authToken = uuid.v4();
+
+    // Check if a user with the same token already exists
     const existingUser = await queryDb(db, `SELECT auth_token, auth_token_expiration FROM users WHERE auth_token = ?`, [authToken]);
 
     if (existingUser && existingUser.auth_token_expiration) {
         // Check if the existing token has expired
         const expirationDate = new Date(existingUser.auth_token_expiration);
         if (expirationDate > new Date()) {
+            // Return the existing token if it hasn't expired
             return { authToken: existingUser.auth_token, expirationDate };
         }
     }
+
+    // Return the generated token if no existing user was found or the existing token has expired
     return authToken;
 }
 
+/**
+ * Authenticates a user with a given token.
+ *
+ * @param {string} token - The authentication token.
+ * @returns {string|null} The authenticated username, or null if authentication failed.
+ */
 async function authenticateUser(token) {
-    try {
-        const rows = await queryDb(db, `SELECT auth_token, username FROM users`);
-        console.log(rows);
-        let username = null;
-        for (const row of rows) {
-            const match = await bcrypt.compare(token, row.auth_token);
-            if (match) {
-                username = row.username;
-                break;
-            }
-        }
-        if (!username) {
-            throw new Error('Invalid token');
-        }
-        const timeNow = getTimestamp();
-        console.log(timeNow);
-        await queryDb(db, `UPDATE users SET last_login_at = ? WHERE username = ?`, [timeNow, username]);
-        console.log(`User ${username} authenticated successfully.`);
-        return username;
-    } catch (err) {
-        console.log('Authentication failed:', err.message);
-        return null;
+  try {
+    // Get all rows from the users table and log them for debugging.
+    const rows = await queryDb(db, `SELECT auth_token, username FROM users`);
+    console.log('All users:', rows);
+
+    // Find a user with a matching token and extract their username.
+    let username = null;
+    for (const row of rows) {
+      const match = await bcrypt.compare(token, row.auth_token);
+      if (match) {
+        username = row.username;
+        break;
+      }
     }
+
+    // Throw an error if no user was found.
+    if (!username) {
+      throw new Error('Invalid token');
+    }
+
+    // Update the user's last login time to the current time.
+    const timeNow = getTimestamp();
+    console.log('Current timestamp:', timeNow);
+    await queryDb(db, `UPDATE users SET last_login_at = ? WHERE username = ?`, [timeNow, username]);
+
+    // Log a success message and return the authenticated username.
+    console.log(`User ${username} authenticated successfully.`);
+    return username;
+  } catch (err) {
+    // Log an error message and return null if authentication failed.
+    console.log('Authentication failed:', err.message);
+    return null;
+  }
 }
 
 app.post('/auth', async (req, res) => {
@@ -173,54 +238,90 @@ app.post('/login', async (req, res) => {
     }
 });
 
+/**
+ * Finds a user in the database based on their username
+ * @param {Object} db - The database connection object
+ * @param {string} username - The username to search for
+ * @returns {Promise<Object>} - A Promise that resolves with the user object if found, or rejects with an error if not found
+ */
 async function findUser(db, username) {
     return new Promise((resolve, reject) => {
+        // Execute a SQL query to find the user
         db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, row) => {
             if (err) {
+                // If there was an error, reject the Promise with the error object
                 reject(err);
             } else {
+                // If the user was found, resolve the Promise with the user object
                 resolve(row);
             }
-            logMessage('Finding User...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+            // This code is unreachable because the Promise is already resolved or rejected.
+            // It should be removed.
+            logMessage('Finding User...', 'info');
+            try {
+                const result = 1 / 0;
+            } catch (error) {
+                logMessage(error.message, 'error');
+            }
         });
     });
 }
 
+/**
+ * Validates user credentials against the provided database.
+ * If user does not exist, a new account will be created.
+ * If user exists, their password will be checked against the provided password.
+ * If password is correct, their last login time will be updated.
+ * @param {Object} db - The database object.
+ * @param {Object} user - The user object.
+ * @param {string} username - The username to validate.
+ * @param {string} password - The password to validate.
+ */
 async function validateCredentials(db, user, username, password) {
-    console.log(password);
-    if (!user) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const timeNow = getTimestamp();
-        console.log(timeNow); // Output: "2023-03-29 08:15:30"
-        db.run(`INSERT OR IGNORE INTO users (username, password, created_at)
-                VALUES (?, ?, ?)`, [username, hashedPassword, timeNow]);
-        console.log("Created new account.");
-        await logMessage('Creating New Account...', 'info');
-        try {
-            const result = 1 / 0;
-        } catch (error) {
-            await logMessage(error.message, 'error');
-        }
-    } else {
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            await sleep(5000);
-            throw new Error('Incorrect password.');
-        } else {
-            const timeNow = getTimestamp();
-            console.log(timeNow); // Output: "2023-03-29 08:15:30"
-            db.run(`UPDATE users
-                    SET last_login_at = ?
-                    WHERE username = ?`, [timeNow, username]);
-            console.log("Updated last login time.");
-            await logMessage('Updating last login time...', 'info');
-            try {
-                const result = 1 / 0;
-            } catch (error) {
-                await logMessage(error.message, 'error');
-            }
-        }
+  console.log(password); // Log password for debugging purposes
+  if (!user) {
+    // If user does not exist, create new account
+    const hashedPassword = await bcrypt.hash(password, 10); // Hash password
+    const timeNow = getTimestamp(); // Get current timestamp
+    console.log(timeNow); // Log timestamp for debugging purposes
+    db.run(
+      `INSERT OR IGNORE INTO users (username, password, created_at)
+            VALUES (?, ?, ?)`,
+      [username, hashedPassword, timeNow]
+    ); // Insert new user into database
+    console.log("Created new account."); // Log success
+    await logMessage("Creating New Account...", "info"); // Log to external logging service
+    try {
+      const result = 1 / 0; // Simulate error for debugging purposes
+    } catch (error) {
+      await logMessage(error.message, "error"); // Log error to external logging service
     }
+  } else {
+    // If user exists, check password
+    const isMatch = await bcrypt.compare(password, user.password); // Compare hashed password with stored password
+    if (!isMatch) {
+      // If passwords do not match, throw error
+      await sleep(5000); // Delay to prevent brute force attacks
+      throw new Error("Incorrect password.");
+    } else {
+      // If passwords match, update last login time
+      const timeNow = getTimestamp(); // Get current timestamp
+      console.log(timeNow); // Log timestamp for debugging purposes
+      db.run(
+        `UPDATE users
+                SET last_login_at = ?
+                WHERE username = ?`,
+        [timeNow, username]
+      ); // Update user's last login time in database
+      console.log("Updated last login time."); // Log success
+      await logMessage("Updating last login time...", "info"); // Log to external logging service
+      try {
+        const result = 1 / 0; // Simulate error for debugging purposes
+      } catch (error) {
+        await logMessage(error.message, "error"); // Log error to external logging service
+      }
+    }
+  }
 }
 
 app.get('/get/quizlet', async (req, res) => {
@@ -294,16 +395,28 @@ app.get('/get/quizlet', async (req, res) => {
     }
 });
 
+/**
+ * Checks if the directory exists, creates it if it doesn't, and logs the action.
+ */
 function checkAndCreateDir() {
-    // Check if directory exists
-    if (fs.existsSync(dataPath)) {
-        console.log(`Directory already exists at ${dataPath}`);
-    } else {
-        // Create directory
-        fs.mkdirSync(dataPath, { recursive: true });
-        console.log(`Created directory at ${dataPath}`);
-    }
-    logMessage('Creating data Directory...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+  // Check if directory already exists
+  if (fs.existsSync(dataPath)) {
+    console.log(`Directory already exists at ${dataPath}`);
+  } else {
+    // Create directory if it doesn't exist
+    fs.mkdirSync(dataPath, { recursive: true });
+    console.log(`Created directory at ${dataPath}`);
+  }
+
+  // Log message indicating that data directory is being created
+  logMessage('Creating data Directory...', 'info');
+
+  try {
+    const result = 1 / 0;
+  } catch (error) {
+    // Log any errors that occur during function execution
+    logMessage(error.message, 'error');
+  }
 }
 
 app.post('/post/typed', (req, res) => {
@@ -556,61 +669,116 @@ app.get('/profile', async (req, res) => {
     }
 });
 
+/**
+ * Gets the playtime of a given user from the database.
+ * @param {string} username - The username of the user to retrieve the playtime for.
+ * @param {object} db - The database connection object.
+ * @returns {number} The playtime of the user.
+ */
 async function getPlaytime(username, db) {
-    const user = (await queryDb(db, `SELECT id FROM users WHERE username = ?`, [username]))[0];
-    if (!user) return 0;
-    const row = (await queryDb(db, `SELECT playtime FROM playtime WHERE user_id = ?`, [user.id]))[0];
-    if (!row) return 0;
-    await logMessage('Getting Playtime...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
-    return row.playtime;
+  // Get the user ID from the database.
+  const user = (await queryDb(db, `SELECT id FROM users WHERE username = ?`, [username]))[0];
+  // If the user doesn't exist, return 0 playtime.
+  if (!user) return 0;
+  // Get the playtime row from the database.
+  const row = (await queryDb(db, `SELECT playtime FROM playtime WHERE user_id = ?`, [user.id]))[0];
+  // If the playtime row doesn't exist, return 0 playtime.
+  if (!row) return 0;
+  // This is a test of logging a message at the beginning of the function.
+  await logMessage('Getting Playtime...', 'info');
+  // This is a test of throwing an error and logging it.
+  try {
+    const result = 1 / 0;
+  } catch (error) {
+    await logMessage(error.message, 'error');
+  }
+  // Return the playtime value from the row.
+  return row.playtime;
 }
 
+/**
+ * Returns an array of word counts per day for a given username from a SQLite database.
+ * @param {string} username - The username to get word counts for.
+ * @param {Object} db - The SQLite database object.
+ * @returns {Promise} - A Promise that resolves with an array of objects representing word counts per day.
+ */
 async function getWordCountPerDay(username, db) {
     return new Promise((resolve, reject) => {
-        db.all(`SELECT DATE(history.created_at) AS day, COUNT(*) AS word_count
-      FROM history JOIN users
-      ON history.user_id = users.id
-      WHERE users.username = ?
-      GROUP BY day;`, [username], (err, rows) => {
+        db.all(`
+            SELECT DATE(history.created_at) AS day, COUNT(*) AS word_count
+            FROM history
+            JOIN users ON history.user_id = users.id
+            WHERE users.username = ?
+            GROUP BY day;
+            `, [username], (err, rows) => {
             if (err) {
                 console.error(err.message);
                 reject(err);
             } else {
-                const wordCountPerDay = rows.map(row => ({ day: row.day, count_on_the_day: row.word_count }));
+                // Map the rows to an array of objects with day and count_on_the_day properties
+                const wordCountPerDay = rows.map(row => ({
+                    day: row.day,
+                    count_on_the_day: row.word_count
+                }));
+
+                // Log a message indicating that we're getting word counts
+                logMessage('Getting Word Counts...', 'info');
+
+                // Try to divide by zero to trigger a catch block and log an error message
+                try {
+                    const result = 1 / 0;
+                } catch (error) {
+                    logMessage(error.message, 'error');
+                }
+
+                // Resolve the Promise with the array of word counts per day
                 resolve(wordCountPerDay);
             }
         });
-        logMessage('Getting Word Counts...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
     });
 }
 
+/**
+ * Gets profile data for a given username from a database.
+ * @param {string} username - The username to get profile data for.
+ * @param {Object} db - The database object to query.
+ * @returns {Promise} A promise that resolves to an object containing profile data.
+ */
 async function getDataProfile(username, db) {
-    return new Promise((resolve, reject) => {
-        db.get('SELECT COUNT(*) AS count FROM users WHERE username = ?', [username], (err, row) => {
-            if (err) {
-                console.error(err.message);
-                reject(err);
-            } else if (row.count === 0) {
-                const err = new Error(`User ${username} does not exist.`);
-                console.error(err.message);
-                reject(err);
-            } else {
-                db.all('SELECT quizlet.quizlet_id, quizlet.quizlet_title, COUNT(*) AS word_count FROM history JOIN quizlet ON history.quizlet_id = quizlet.quizlet_id JOIN users ON history.user_id = users.id WHERE users.username = ? GROUP BY quizlet.quizlet_id, quizlet.quizlet_title', [username], (err, rows) => {
-                    if (err) {
-                        console.error(err.message);
-                        reject(err);
-                    } else {
-                        const sortedRows = rows.sort((a, b) => b.word_count - a.word_count);
-                        const labels = sortedRows.map(row => `${row.quizlet_title} - ${row.quizlet_id}`);
-                        const data = sortedRows.map(row => row.word_count);
-                        const result = {labels, data};
-                        resolve(result);
-                    }
-                });
-            }
+  return new Promise((resolve, reject) => {
+    // Gets the number of users with the given username.
+    db.get('SELECT COUNT(*) AS count FROM users WHERE username = ?', [username], (err, row) => {
+      if (err) {
+        console.error(err.message);
+        reject(err);
+      } else if (row.count === 0) {
+        // If no users were found, reject with an error.
+        const err = new Error(`User ${username} does not exist.`);
+        console.error(err.message);
+        reject(err);
+      } else {
+        // Otherwise, get quizlet data for the user.
+        db.all('SELECT quizlet.quizlet_id, quizlet.quizlet_title, COUNT(*) AS word_count FROM history JOIN quizlet ON history.quizlet_id = quizlet.quizlet_id JOIN users ON history.user_id = users.id WHERE users.username = ? GROUP BY quizlet.quizlet_id, quizlet.quizlet_title', [username], (err, rows) => {
+          if (err) {
+            console.error(err.message);
+            reject(err);
+          } else {
+            // Sort the rows in descending order by word count.
+            const sortedRows = rows.sort((a, b) => b.word_count - a.word_count);
+            // Get the quizlet titles and IDs as labels.
+            const labels = sortedRows.map(row => `${row.quizlet_title} - ${row.quizlet_id}`);
+            // Get the word counts as data.
+            const data = sortedRows.map(row => row.word_count);
+            // Return the labels and data as an object.
+            const result = {labels, data};
+            resolve(result);
+          }
         });
-        logMessage('Getting Profile Data...', 'info'); try { const result = 1 / 0; } catch (error) { logMessage(error.message, 'error'); }
+      }
     });
+    // Log a message to indicate that profile data is being retrieved.
+    logMessage('Getting Profile Data...', 'info');
+  });
 }
 
 app.post('/post/playtime', async (req, res) => {
@@ -653,70 +821,145 @@ app.post('/post/playtime', async (req, res) => {
     }
 });
 
+/**
+ * Returns a promise that resolves after a given amount of time.
+ * @param {number} ms - The amount of time to sleep in milliseconds.
+ * @returns {Promise} A promise that resolves after the given amount of time has passed.
+ */
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
 }
 
+/**
+ * Fetches Quizlet terms for a given container ID
+ * @param {number} id - the container ID to fetch terms for
+ * @returns {Array<Object>} - an array of term objects
+ */
 async function quizlet(id){
+    // Fetch the first page of terms
     let res = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=1`).then(res => res.json())
+
+    // Initialize variables for pagination
     let currentLength = 5;
     let token = res.responses[0].paging.token
     let terms = res.responses[0].models.studiableItem;
     let page = 2;
+
+    // Keep fetching pages until we get less than 5 terms
     while (currentLength >= 5){
+        // Fetch the next page of terms
         let res = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=${page++}&pagingToken=${token}`).then(res => res.json());
+
+        // Append the new terms to our array and update the pagination variables
         terms.push(...res.responses[0].models.studiableItem);
         currentLength = res.responses[0].models.studiableItem.length;
         token = res.responses[0].paging.token;
     }
-    await logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
+
+    // Log a message indicating that we're fetching Quizlet data
+    await logMessage('Getting Quizlet data...', 'info');
+
+    // Throw an error for testing purposes
+    try {
+        const result = 1 / 0;
+    } catch (error) {
+        await logMessage(error.message, 'error');
+    }
+
+    // Return the array of terms
     return terms;
 }
 
+/**
+ * Fetches details of a Quizlet set from its ID.
+ * @param {string} id - Quizlet set ID.
+ * @returns {Object} - Object containing quizlet_title, termLang, and defLang.
+ */
 async function getQuizletDetails(id) {
-    const response = await fetch(`https://quizlet.com/webapi/3.4/sets/${id}`, {
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        }
-    }).then(res => res.json());
-    const set = response.responses[0].models.set[0];
-    await logMessage('Getting Quizlet data...', 'info'); try { const result = 1 / 0; } catch (error) { await logMessage(error.message, 'error'); }
-    return {
-        quizlet_title: set.title,
-        termLang: set.wordLang,
-        defLang: set.defLang
-    };
+  // Make a fetch request to Quizlet API to get set details
+  const response = await fetch(`https://quizlet.com/webapi/3.4/sets/${id}`, {
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8'
+    }
+  }).then(res => res.json());
+
+  // Extract set details from the API response
+  const set = response.responses[0].models.set[0];
+
+  // Log a message indicating that Quizlet data is being fetched
+  await logMessage('Getting Quizlet data...', 'info');
+
+  try {
+    // Attempt to divide by zero to trigger an error
+    const result = 1 / 0;
+  } catch (error) {
+    // Log the error message if an error occurs
+    await logMessage(error.message, 'error');
+  }
+
+  // Return an object with the necessary set details
+  return {
+    quizlet_title: set.title,
+    termLang: set.wordLang,
+    defLang: set.defLang
+  };
 }
 
+/**
+ * Queries a SQLite database using the provided SQL statement and parameters.
+ * @param {Object} db - The SQLite database object.
+ * @param {string} sql - The SQL statement to execute.
+ * @param {Array} params - An array of parameters to substitute into the SQL statement.
+ * @returns {Promise<Array>} - A promise that resolves with an array of rows returned by the query, or rejects with an error.
+ */
 async function queryDb(db, sql, params) {
+    // Create a new promise that wraps the database query logic
     return new Promise((resolve, reject) => {
+        // Serialize the database to ensure queries execute in order
         db.serialize(() => {
+            // Execute the query with the provided SQL and parameters
             db.all(sql, params, (err, rows) => {
+                // If an error occurred, reject the promise with the error
                 if (err) reject(err);
+                // Otherwise, resolve the promise with the returned rows
                 else resolve(rows);
             });
         });
     });
 }
 
+/**
+ * Converts a duration in milliseconds into a human-readable string with hours, minutes and seconds.
+ *
+ * @param {number} durationInMs - The duration in milliseconds.
+ *
+ * @returns {string} The formatted duration string.
+ */
 async function formatDuration(durationInMs) {
-    const seconds = Math.floor(durationInMs / 1000);
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    const parts = [];
-    if (hours > 0) {
-        parts.push(`${hours} hour${hours === 1 ? '' : 's'}`);
-    }
-    if (minutes > 0) {
-        parts.push(`${minutes} minute${minutes === 1 ? '' : 's'}`);
-    }
-    if (remainingSeconds > 0 || parts.length === 0) {
-        parts.push(`${remainingSeconds} second${remainingSeconds === 1 ? '' : 's'}`);
-    }
-    return parts.join(' ');
+  // Convert to seconds
+  const seconds = Math.floor(durationInMs / 1000);
+
+  // Split into hours, minutes and remaining seconds
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  // Build parts array with hours, minutes and seconds
+  const parts = [];
+  if (hours > 0) {
+    parts.push(`${hours} hour${hours === 1 ? '' : 's'}`);
+  }
+  if (minutes > 0) {
+    parts.push(`${minutes} minute${minutes === 1 ? '' : 's'}`);
+  }
+  if (remainingSeconds > 0 || parts.length === 0) {
+    parts.push(`${remainingSeconds} second${remainingSeconds === 1 ? '' : 's'}`);
+  }
+
+  // Join parts array into formatted duration string
+  return parts.join(' ');
 }
 
 const logsDir = path.join(__dirname, 'log');
@@ -741,12 +984,21 @@ const logger = winston.createLogger({
     ],
 });
 
+/**
+ * Logs a message with the specified log level and adds metadata about the caller's file and line number.
+ * @param {string} message - The message to log.
+ * @param {string} level - The log level to use (e.g. 'info', 'warn', 'error').
+ */
 const logMessage = async (message, level) => {
-    const stack = await StackTrace.get();
-    const callerFile = stack[1].fileName;
-    const callerLine = stack[1].lineNumber;
-    const meta = { file: callerFile, line: callerLine };
-    logger.log(level, message, meta);
+  // Get the stack trace to find the caller's file and line number.
+  const stack = await StackTrace.get();
+  // Get the file name and line number of the function that called logMessage.
+  const callerFile = stack[1].fileName;
+  const callerLine = stack[1].lineNumber;
+  // Create metadata object to include in log message.
+  const meta = { file: callerFile, line: callerLine };
+  // Call the logger with the specified level, message and metadata.
+  logger.log(level, message, meta);
 }
 
 checkAndCreateDir();
