@@ -425,7 +425,7 @@ app.get('/leaderboard', async (req, res) => {
 
             for (const row of leaderboard) {
                 const formattedTime = await formatDuration(row.playtime);
-                html += `<li>${row.username}: ${formattedTime}</li>`;
+                html += `<li><a href="/profile?user=${row.username}">${row.username}</a>: ${formattedTime}</li>`;
             }
 
             html += '</ol></body></html>';
