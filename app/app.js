@@ -401,14 +401,29 @@ app.get('/leaderboard', async (req, res) => {
     checkAndCreateDir();
     try {
         if (req.query.quizlet_id === undefined) {
+            const playtimeRows = await queryDb(db, "SELECT * FROM playtime");
+            const userRows = await queryDb(db, "SELECT * FROM users");
+
+            const userIdToUsername = {};
+            for (const row of userRows) {
+                userIdToUsername[row.id] = row.username;
+            }
+
+            const leaderboard = [];
+            for (const row of playtimeRows) {
+                leaderboard.push({
+                    username: userIdToUsername[row.user_id],
+                    playtime: row.playtime,
+                });
+            }
+
+            leaderboard.sort((a, b) => b.playtime - a.playtime);
+
             let html = `<!DOCTYPE html><html><head><title>Leaderboard - Playtime</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/leaderboard/style.css" /></head><body>`;
             html += `<h1>Leaderboard - Playtime</h1>`;
             html += '<ol>';
 
-            const rows = await queryDb(db, `SELECT playtime, username FROM playtime JOIN users ON playtime.user_id = users.id ORDER BY playtime DESC`);
-            if (rows.length === 0) return 0;
-
-            for (const row of rows) {
+            for (const row of leaderboard) {
                 const formattedTime = await formatDuration(row.playtime);
                 html += `<li>${row.username}: ${formattedTime}</li>`;
             }
