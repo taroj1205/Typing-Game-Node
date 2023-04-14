@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Leaderboard - {{quizlet_title}}</title>
+  <title>Leaderboard{{#if quizlet_title}} - {{quizlet_title}}{{/if}}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" />
   <link rel="stylesheet" type="text/css" href="/css/leaderboard/style.css" />
@@ -14,42 +14,45 @@
   <meta property="og:url" content="https://typing-game.taroj1205.poyo.jp/" />
   <meta property="og:description" content="タイピングゲーム風な形で単語を学習できるサイトです。" />
   <meta property="og:site_name" content="タイピングゲーム風単語学習" />
-  <!-- TODO <meta property="og:image" content="" /> -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <!-- TODO <meta name="twitter:image:src" content="" /> -->
-  <meta name="twitter:site" content="@taroj1205">
-  <meta name="twitter:creator" content="@taroj1205">
-  <meta name="subject" content="タイピングゲーム風な形で単語を学習できるサイトです。" />
-  <meta name="author" content="taroj1205" />
-  <meta name="designer" content="taroj1205" />
 </head>
 <body>
-{{#if rankList.length}}
-<h1>Leaderboard - <a href="https://quizlet.com/{{quizlet_id}}">{{quizlet_title}}</a></h1>
-<h2>Word count</h2>
-<ol>
-  {{#each rankList}}
-  <li>
-    <a href="/profile?user={{this.username}}">{{this.username}}</a>: {{this.word_count}} words
-  </li>
-  {{/each}}
-</ol>
-<canvas id="bar-chart" width="1000" height="400"></canvas>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: {{{labels}}}, datasets: [{ label: 'Word Count', data: {{{data}}} }] }, options: { responsive: false } })</script>
-{{else}}
-<h1>Leaderboard</h1>
-<p>No one has typed any words yet!</p>
-{{/if}}
+  {{#if leaderboard}}
+    <h1>Leaderboard</h1>
+    {{#if leaderboard.length}}
+      <ol>
+        {{#each leaderboard}}
+          <li>{{this.username}}: {{this.playtime}}</li>
+        {{/each}}
+      </ol>
+    <p>More leaderboard types coming soon...</p>
+    {{else}}
+      <p>No one has played yet!</p>
+    {{/if}}
+  {{/if}}
 
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-XBBDEKPNTX"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  {{#if quizlet_id}}
+    <h1>Quizlet Leaderboard - {{quizlet_title}}</h1>
+    {{#if rankList.length}}
+      <ol>
+        {{#each rankList}}
+          <li><a href="{{this.profile_url}}">{{this.username}}</a>: {{this.word_count}} words</li>
+        {{/each}}
+      </ol>
+  <canvas id="bar-chart" width="1000" height="400"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: {{{labels}}}, datasets: [{ label: 'Word Count', data: {{{data}}} }] }, options: { responsive: false } })</script>
+    {{else}}
+      <p>No one has played this quizlet yet!</p>
+    {{/if}}
+  {{/if}}
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XBBDEKPNTX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
 
-  gtag('config', 'G-XBBDEKPNTX');
-</script>
+    gtag('config', 'G-XBBDEKPNTX');
+  </script>
 </body>
 </html>

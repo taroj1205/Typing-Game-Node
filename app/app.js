@@ -411,24 +411,23 @@ app.get('/leaderboard', async (req, res) => {
 
             const leaderboard = [];
             for (const row of playtimeRows) {
+                const formattedTime = await formatDuration(row.playtime);
                 leaderboard.push({
                     username: userIdToUsername[row.user_id],
-                    playtime: row.playtime,
+                    playtime: formattedTime,
                 });
             }
 
             leaderboard.sort((a, b) => b.playtime - a.playtime);
 
-            let html = `<!DOCTYPE html><html><head><title>Leaderboard - Playtime</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/leaderboard/style.css" /></head><body>`;
-            html += `<h1>Leaderboard - Playtime</h1>`;
-            html += '<ol>';
+            const templatePath = path.join(__dirname, 'public', 'html', 'leaderboard', 'index.html');
+            const templateSource = fs.readFileSync(templatePath, 'utf8');
+            const template = handlebars.compile(templateSource);
 
-            for (const row of leaderboard) {
-                const formattedTime = await formatDuration(row.playtime);
-                html += `<li><a href="/profile?user=${row.username}">${row.username}</a>: ${formattedTime}</li>`;
-            }
+            const html = template({
+                leaderboard,
+            });
 
-            html += '</ol></body></html>';
             console.log("Sending ", html);
             res.header('Content-Type', 'text/html');
             res.send(html);
