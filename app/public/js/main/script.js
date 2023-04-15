@@ -942,3 +942,9 @@ const searchQuizlets = (searchTerm, quizlets) => {
     });
 };
 
+defText.addEventListener("click", () => {
+    setTimeout(() => {
+        typingInput.focus();
+        console.log("focus!");
+    }, 500);
+})
