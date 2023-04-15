@@ -111,10 +111,12 @@ window.onload = async () => {
 
             // Add event listener to dropdown menu
             dropdownMenu.addEventListener('change', (event) => {
-                const selectedQuizletId = event.target.value;
-                console.log(selectedQuizletId);
-                localStorage.setItem('quizlet', selectedQuizletId);
-                urlInput.value = `https://quizlet.com/${selectedQuizletId}`;
+                selectQuizlet(event.target);
+            });
+
+            // For phones, also listen for click events on the options themselves
+            dropdownMenu.addEventListener('click', (event) => {
+                selectQuizlet(event.target);
             });
 
             // Set the initial value of the dropdown menu
@@ -170,7 +172,15 @@ window.onload = async () => {
         })
         .catch((error) => console.error(error));
 }
-
+const selectQuizlet = (option) => {
+    const selectedQuizletId = option.value;
+    console.log(selectedQuizletId);
+    localStorage.setItem('quizlet', selectedQuizletId);
+    urlInput.value = `https://quizlet.com/${selectedQuizletId}`;
+    setTimeout(() => {
+        urlInput.focus();
+    }, 500);
+}
 const filterQuizletList = (quizlets, dropdownMenu) => {
     const searchTerm = urlInput.value;
     const matchingQuizlets = searchQuizlets(searchTerm, quizlets);
