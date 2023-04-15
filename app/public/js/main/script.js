@@ -126,14 +126,12 @@ window.onload = async () => {
             dropdownMenu.size = dropdownMenu.options.length > 4 ? 4 : dropdownMenu.options.length;
 
             urlInput.addEventListener('input', (event) => {
-                const searchTerm = urlInput.value;
-                const matchingQuizlets = searchQuizlets(searchTerm, quizlets);
-                console.log(matchingQuizlets);
-                dropdownMenu.options[0].style.backgroundColor = '#cecece';
-                dropdownMenu.innerHTML = '';
-                renderDropdownOptions(matchingQuizlets, dropdownMenu);
+                filterQuizletList(quizlets, dropdownMenu);
             });
 
+            filterQuizletList(quizlets, dropdownMenu);
+
+            // Add event listener to the URL input
             urlInput.addEventListener('keydown', (event) => {
                 if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
                     // Up or down arrow key is pressed
@@ -171,19 +169,29 @@ window.onload = async () => {
             });
         })
         .catch((error) => console.error(error));
-
-    const renderDropdownOptions = (quizlets, dropdownMenu) => {
-        quizlets.forEach((quizlet) => {
-            // Create option element for each quizlet
-            const option = document.createElement('option');
-            option.textContent = quizlet.quizlet_title + ' - ' + quizlet.quizlet_id;
-            option.value = quizlet.quizlet_id;
-            option.style.display = 'block';
-            dropdownMenu.appendChild(option);
-        });
-    };
-
 }
+
+const filterQuizletList = (quizlets, dropdownMenu) => {
+    const searchTerm = urlInput.value;
+    const matchingQuizlets = searchQuizlets(searchTerm, quizlets);
+    console.log(matchingQuizlets);
+    dropdownMenu.innerHTML = '';
+    dropdownMenu.style.display = 'block';
+    renderDropdownOptions(matchingQuizlets, dropdownMenu);
+}
+
+const renderDropdownOptions = (quizlets, dropdownMenu) => {
+    console.log(quizlets);
+    quizlets.forEach((quizlet) => {
+        // Create option element for each quizlet
+        const option = document.createElement('option');
+        option.textContent = quizlet.quizlet_title + ' - ' + quizlet.quizlet_id;
+        option.value = quizlet.quizlet_id;
+        option.style.display = 'block';
+        dropdownMenu.appendChild(option);
+    });
+    dropdownMenu.options[0].style.backgroundColor = '#cecece';
+};
 
 const loading = () => {
     loadingText.textContent = 'Loading...';
