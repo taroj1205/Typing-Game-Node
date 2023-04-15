@@ -62,7 +62,7 @@ body {
   margin: 0;
   padding: 0;
   position: fixed;
-  transform: translateX(-52%);
+  transform: translateX(-50%);
   white-space: nowrap;
 }
 ruby {

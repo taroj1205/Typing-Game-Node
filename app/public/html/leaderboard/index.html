@@ -38,9 +38,9 @@
           <li><a href="{{this.profile_url}}">{{this.username}}</a>: {{this.word_count}} words</li>
         {{/each}}
       </ol>
-  <canvas id="bar-chart" width="1000" height="400"></canvas>
+  <canvas id="bar-chart" height="400"></canvas>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: {{{labels}}}, datasets: [{ label: 'Word Count', data: {{{data}}} }] }, options: { responsive: false } })</script>
+  <script>new Chart(document.getElementById('bar-chart'), { type: 'bar', data: { labels: {{{labels}}}, [{ label: 'Word Count', data: {{{data}}} }] }, { false } })</script>
     {{else}}
       <p>No one has played this quizlet yet!</p>
     {{/if}}

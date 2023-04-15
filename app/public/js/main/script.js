@@ -86,11 +86,102 @@ window.onload = async () => {
     console.log(username);
     if (username) {
         getWords(username);
-    }
-    else {
+    } else {
         loadingSection.style.display = 'none';
         loginSection.style.display = 'block';
     }
+
+    setTimeout(() => {
+        urlInput.focus();
+    }, 500);
+
+    fetch('/get/quizlet/list')
+        .then((response) => response.json())
+        .then((quizlets) => {
+            // Create dropdown menu container
+            const dropdownContainer = document.createElement('div');
+            dropdownContainer.classList.add('dropdown-container');
+
+            // Create dropdown menu
+            const dropdownMenu = document.createElement('select');
+            dropdownMenu.id = 'dropdown-menu';
+            dropdownMenu.style.width = '100%';
+            renderDropdownOptions(quizlets, dropdownMenu);
+            dropdownContainer.appendChild(dropdownMenu);
+
+            // Add event listener to dropdown menu
+            dropdownMenu.addEventListener('change', (event) => {
+                const selectedQuizletId = event.target.value;
+                console.log(selectedQuizletId);
+                localStorage.setItem('quizlet', selectedQuizletId);
+                urlInput.value = `https://quizlet.com/${selectedQuizletId}`;
+            });
+
+            // Set the initial value of the dropdown menu
+            dropdownMenu.value = localStorage.getItem('quizlet');
+
+            // Insert the dropdown menu after the URL input
+            const urlInputParent = urlInput.parentElement;
+            urlInputParent.insertBefore(dropdownContainer, urlInput.nextSibling);
+            dropdownMenu.size = dropdownMenu.options.length;
+
+            urlInput.addEventListener('input', (event) => {
+                const searchTerm = urlInput.value;
+                const matchingQuizlets = searchQuizlets(searchTerm, quizlets);
+                dropdownMenu.options[0].style.backgroundColor = '#cecece';
+                dropdownMenu.innerHTML = '';
+                renderDropdownOptions(matchingQuizlets, dropdownMenu);
+            });
+
+            urlInput.addEventListener('keydown', (event) => {
+                if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                    // Up or down arrow key is pressed
+                    const dropdownMenu = document.querySelector('#dropdown-menu');
+                    if (dropdownMenu && dropdownMenu.options.length > 0) {
+                        // Get the current selected index
+                        let selectedIndex = dropdownMenu.selectedIndex;
+                        if (selectedIndex === -1) {
+                            // No option is selected, default to the first one
+                            selectedIndex = 0;
+                        }
+                        // Set the new selected index based on the arrow key pressed
+                        if (event.key === 'ArrowUp' && selectedIndex > 0) {
+                            selectedIndex--;
+                        } else if (event.key === 'ArrowDown' && selectedIndex < dropdownMenu.options.length - 1) {
+                            selectedIndex++;
+                        }
+                        // Set the new value and background color of the input and options
+                        const selectedOption = dropdownMenu.options[selectedIndex];
+                        urlInput.value = selectedOption.textContent;
+                        selectedOption.style.backgroundColor = '#cecece';
+                        if (selectedIndex > 0) {
+                            dropdownMenu.options[selectedIndex - 1].style.backgroundColor = 'white';
+                        }
+                        if (selectedIndex < dropdownMenu.options.length - 1) {
+                            dropdownMenu.options[selectedIndex + 1].style.backgroundColor = 'white';
+                        }
+                        // Update the selected index in the dropdown menu
+                        dropdownMenu.selectedIndex = selectedIndex;
+                    }
+                }
+                if ((event.key === 'Tab' || event.key === 'Enter') && dropdownMenu.options.length > 0) {
+                    urlInput.value = dropdownMenu.options[0].textContent;
+                }
+            });
+        })
+        .catch((error) => console.error(error));
+
+    const renderDropdownOptions = (quizlets, dropdownMenu) => {
+        quizlets.forEach((quizlet) => {
+            // Create option element for each quizlet
+            const option = document.createElement('option');
+            option.textContent = quizlet.quizlet_title + ' - ' + quizlet.quizlet_id;
+            option.value = quizlet.quizlet_id;
+            option.style.display = 'block';
+            dropdownMenu.appendChild(option);
+        });
+    };
+
 }
 
 const loading = () => {
@@ -129,7 +220,17 @@ const loading = () => {
             window.location.reload();
         }
     }, 15000);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'c') {
+            if (loadingSection.style.display === 'block') {
+                document.cookie = 'auth_token=;';
+                window.location.reload();
+            }
+        }
+    });
 }
+
 const getUsername = async () => {
     const auth_token = document.cookie
         .split('; ')
@@ -142,10 +243,10 @@ const getUsername = async () => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ auth_token })
+            body: JSON.stringify({auth_token})
         });
         if (response.ok) {
-            const { username } = await response.json();
+            const {username} = await response.json();
             return username;
         } else {
             console.error('Error sending auth token:', response.statusText);
@@ -202,14 +303,17 @@ const login = () => {
     localStorage.setItem('password', password);
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${address}/login`);
-    xhr.onload = function() {
+    xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
             if (response.success) {
                 const expirationDate = new Date(response.expires_at);
                 document.cookie = `auth_token=${response.auth_token}; expires=${expirationDate.toUTCString()}; path=/;`;
-                const urlValue = urlInput.value;
+                let urlValue = urlInput.value;
+                if (!urlValue) {
+                    urlValue = document.getElementById('dropdown-menu').value;
+                }
                 localStorage.setItem('quizlet', urlValue);
                 getWords(username);
             } else {
@@ -223,22 +327,44 @@ const login = () => {
             submitButton.disabled = false;
         }
     };
-    xhr.onerror = function() {
+    xhr.onerror = function () {
         console.error(xhr.statusText);
         console.error('Request failed.');
         submitButton.disabled = false;
     };
     xhr.setRequestHeader('Content-Type', 'application/json');
-    const data = { username, password };
+    const data = {username, password};
     xhr.send(JSON.stringify(data));
 }
 
 const getWords = (username) => {
+    let params;
+    let urlValue;
+    const dropdown = document.getElementById('dropdown-menu');
+
     const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-    const urlValue = localStorage.getItem("quizlet");
+    if (dropdown && dropdown.options.length > 0) {
+        urlValue = dropdown.options[0].value.trim();
+    }
+    else if (!urlValue) {
+        urlValue = urlInput.value.trim();
+    } else {
+        loadingSection.style.display = 'none';
+        loginSection.style.display = 'block';
+    }
+
+    const quizletMath = urlValue.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+    if (quizletMath) {
+        quizlet_id = quizletMath[1];
+    } else {
+        quizlet_id = urlValue;
+    }
+    params = `quizlet_id=${quizlet_id}`;
+    localStorage.setItem('quizlet', quizlet_id);
+    console.log(params);
     setting_username.textContent = username;
 
-    const cachedData = localStorage.getItem(urlValue);
+    const cachedData = localStorage.getItem("urlValue");
     if (cachedData) {
         const cachedResponse = JSON.parse(cachedData);
         const cacheAge = Date.now() - cachedResponse.timestamp;
@@ -250,14 +376,14 @@ const getWords = (username) => {
     }
 
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', `${address}/get/quizlet?url=${urlValue}`);
+    xhr.open('GET', `${address}/get/quizlet/data?${params}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function() {
+    xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
-            const cachedResponse = { data: response, timestamp: Date.now() };
-            localStorage.setItem(urlValue, JSON.stringify(cachedResponse));
+            const cachedResponse = {data: response, timestamp: Date.now()};
+            localStorage.setItem("urlValue", JSON.stringify(cachedResponse));
             startGame(username, response);
         } else if (xhr.status === 400) {
             console.error(xhr.statusText);
@@ -265,12 +391,14 @@ const getWords = (username) => {
             urlInput.style.borderColor = 'red';
             urlInput.value = '';
             urlInput.placeholder = 'Please use quizlet.com';
+            loadingSection.style.display = 'none';
+            loginSection.style.display = 'block';
         } else {
             console.error(xhr.statusText);
             submitButton.disabled = false;
         }
     };
-    xhr.onerror = function() {
+    xhr.onerror = function () {
         console.error(xhr.statusText);
         console.error('Request failed.');
         submitButton.disabled = false;
@@ -341,9 +469,8 @@ const newWord = async (username, response) => {
 
 const typing = (num, def, term, username, response) => {
     console.log('def: ' + def);
-    typingInput.addEventListener("input", function(event) {
-        if (event.inputType === "insertText" && event.data === def[num])
-        {
+    typingInput.addEventListener("input", function (event) {
+        if (event.inputType === "insertText" && event.data === def[num]) {
             console.log(event.data);
             num++;
             const typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
@@ -351,7 +478,7 @@ const typing = (num, def, term, username, response) => {
             document.querySelector("#def").innerHTML = typedOut + notYet;
             if (num >= def.length) {
                 const wordCount = parseInt(wordCountText.textContent.split(': ')[1]);
-                wordCountText.innerHTML = `Words: ${wordCount+1}`;
+                wordCountText.innerHTML = `Words: ${wordCount + 1}`;
                 submitTyped(def, term, username, response);
                 sendPlaytime(username);
                 newWord(username, response);
@@ -367,7 +494,7 @@ const typing = (num, def, term, username, response) => {
 const submitTyped = (def, term, username, response) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${address}/post/typed`);
-    xhr.onload = function() {
+    xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             addHistoryDisplay(term, def);
@@ -375,16 +502,16 @@ const submitTyped = (def, term, username, response) => {
         } else {
             console.error(xhr.statusText);
             console.error('Request failed.');
-            return;
+
         }
     };
-    xhr.onerror = function() {
+    xhr.onerror = function () {
         console.error(xhr.statusText);
         console.error('Request failed.');
     };
     xhr.setRequestHeader('Content-Type', 'application/json');
     let quizlet_id = response.quizlet_id;
-    const data = { term, def, username, quizlet_id };
+    const data = {term, def, username, quizlet_id};
     xhr.send(JSON.stringify(data));
 }
 
@@ -393,7 +520,7 @@ const getHistory = async (username, response) => {
     username = username.trim();
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
-    xhr.onload = function() {
+    xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             console.log(response);
@@ -401,10 +528,10 @@ const getHistory = async (username, response) => {
         } else {
             console.error(xhr.statusText);
             console.error('Request failed.');
-            return;
+
         }
     };
-    xhr.onerror = function() {
+    xhr.onerror = function () {
         console.error(xhr.statusText);
         console.error('Request failed.');
     };
@@ -460,7 +587,7 @@ const addLinks = (username, quizlet_id) => {
     const leaderboardLink = document.createElement('a');
     leaderboardLink.href = `${address}/leaderboard?quizlet_id=${quizlet_id}`;
     leaderboardLink.textContent = 'Leaderboard';
-    leaderboardLink.onclick = function(event) {
+    leaderboardLink.onclick = function (event) {
         event.preventDefault(); // Prevent the link from opening in a new tab
         openOverlay(`${address}/leaderboard?quizlet_id=${quizlet_id}`);
     };
@@ -469,7 +596,7 @@ const addLinks = (username, quizlet_id) => {
     const profileLink = document.createElement('a');
     profileLink.href = `${address}/profile?user=${username}`;
     profileLink.textContent = 'Profile';
-    profileLink.onclick = function(event) {
+    profileLink.onclick = function (event) {
         event.preventDefault(); // Prevent the link from opening in a new tab
         openOverlay(`${address}/profile?user=${username}`);
     };
@@ -490,7 +617,7 @@ const openOverlay = (url) => {
     const closeButton = document.createElement('button');
     closeButton.classList.add('close-button');
     closeButton.innerHTML = '&times;';
-    closeButton.onclick = function() {
+    closeButton.onclick = function () {
         // Remove the overlay when the close button is clicked
         overlay.remove();
         currentOverlay = null;
@@ -506,12 +633,13 @@ const openOverlay = (url) => {
     document.body.appendChild(overlay);
     currentOverlay = overlay;
 
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         const isAnchor = Array.from(linkText.querySelectorAll('a')).some((a) => a.contains(event.target));
         if (!isAnchor) {
             overlay.remove();
             currentOverlay = null;
             document.removeEventListener('click', this);
+            typingInput.focus();
         }
     });
 };
@@ -532,7 +660,7 @@ const addWordCountDisplay = () => {
 const furigana = (word, callback) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${address}/get/furigana?word=${word}`);
-    xhr.onload = function() {
+    xhr.onload = function () {
         if (xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
             console.log(response.furigana);
@@ -543,7 +671,7 @@ const furigana = (word, callback) => {
             callback(response.furigana);
         }
     };
-    xhr.onerror = function() {
+    xhr.onerror = function () {
         console.error(xhr.statusText);
         console.error('Request failed.');
     };
@@ -551,7 +679,7 @@ const furigana = (word, callback) => {
     xhr.send();
 }
 
-document.addEventListener("keypress", function(event) {
+document.addEventListener("keypress", function (event) {
     if (document.activeElement !== typingInput && typingInput.style.display === "block" && !composing) {
         typingInput.focus();
         typingInput.value += event.key;
@@ -560,7 +688,7 @@ document.addEventListener("keypress", function(event) {
     }
 });
 
-menuToggle.addEventListener("click", function() {
+menuToggle.addEventListener("click", function () {
     menuScene.style.display = (menuScene.style.display === "inline-block") ? "none" : "inline-block";
     gameSection.style.display = (gameSection.style.display === "block") ? "none" : "block";
     linkText.style.display = (linkText.style.display === "block") ? "none" : "block";
@@ -578,8 +706,7 @@ menuToggle.addEventListener("click", function() {
 
     quizletLinkSettings.value = localStorage.getItem('quizlet');
 
-    if (typingInput.style.display === "block")
-    {
+    if (typingInput.style.display === "block") {
         typingInput.focus();
         console.log("Focus changed!");
     }
@@ -632,19 +759,61 @@ const updateFurigana = () => {
 };
 
 const getNewQuizletData = () => {
-    submitButton.disabled = true;
-    const url = quizletLinkSettings.value.trim();
-    const oldURL = localStorage.getItem('quizlet');
-    if (oldURL !== url) {
-        localStorage.setItem('quizlet', url);
-        submitButton.disabled = false;
-        quizletLinkSettings.style.borderColor = '';
-        menuToggle.click();
+    const urlValue = quizletLinkSettings.value;
+    const username = usernameInput.value;
+    submitQuizletButton.disabled = true;
+    const currentQuizlet = localStorage.getItem('quizlet');
+
+    let params;
+
+    let new_quizlet_id, current_quizlet_id;
+    const quizlet_id_match = urlValue.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+    if (quizlet_id_match) {
+        new_quizlet_id = quizlet_id_match[1];
+    }
+
+    const currentQuizletMatch = currentQuizlet.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
+    if (currentQuizletMatch) {
+        current_quizlet_id = currentQuizletMatch[1];
+    }
+
+    if (new_quizlet_id != current_quizlet_id) {
+        localStorage.setItem('quizlet', new_quizlet_id);
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `${address}/get/quizlet?${params}`);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                console.log(response);
+                gameTitle.textContent = response.quizlet_title;
+                quizlet_id = response.quizlet_id;
+                addLinks(username, quizlet_id);
+                getHistory(username, response);
+                newWord(username, response);
+                submitQuizletButton.disabled = false;
+                menuToggle.click();
+            } else if (xhr.status === 400) {
+                console.error(xhr.statusText);
+                submitQuizletButton.disabled = false;
+                quizletLinkSettings.style.borderColor = 'red';
+                quizletLinkSettings.value = '';
+                quizletLinkSettings.placeholder = 'Please use quizlet.com';
+            } else {
+                console.error(xhr.statusText);
+                submitQuizletButton.disabled = false;
+
+            }
+        };
+        xhr.onerror = function () {
+            console.error(xhr.statusText);
+            console.error('Request failed.');
+            submitQuizletButton.disabled = false;
+        };
+        xhr.send();
     } else {
         submitQuizletButton.disabled = false;
         quizletLinkSettings.style.borderColor = 'red';
-        quizletLinkSettings.value = '';
-        quizletLinkSettings.placeholder = 'Please enter new Quizlet link';
     }
 }
 
@@ -743,3 +912,9 @@ logoutButton.addEventListener("click", () => {
     document.cookie = 'auth_token=;';
     window.location.reload();
 });
+
+const searchQuizlets = (searchTerm, quizlets) => {
+    return quizlets.filter((quizlet) => {
+        return quizlet.quizlet_title.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+};
