@@ -128,6 +128,7 @@ window.onload = async () => {
             urlInput.addEventListener('input', (event) => {
                 const searchTerm = urlInput.value;
                 const matchingQuizlets = searchQuizlets(searchTerm, quizlets);
+                console.log(matchingQuizlets);
                 dropdownMenu.options[0].style.backgroundColor = '#cecece';
                 dropdownMenu.innerHTML = '';
                 renderDropdownOptions(matchingQuizlets, dropdownMenu);
@@ -915,6 +916,8 @@ logoutButton.addEventListener("click", () => {
 
 const searchQuizlets = (searchTerm, quizlets) => {
     return quizlets.filter((quizlet) => {
-        return quizlet.quizlet_title.toLowerCase().includes(searchTerm.toLowerCase());
+        const searchStr = `${quizlet.quizlet_title} - ${quizlet.quizlet_id}`.toLowerCase();
+        return searchStr.includes(searchTerm.toLowerCase());
     });
 };
+
