@@ -778,14 +778,17 @@ const getNewQuizletData = () => {
         current_quizlet_id = currentQuizletMatch[1];
     }
 
+    params = `quizlet_id=${new_quizlet_id}`;
+
     if (new_quizlet_id !== current_quizlet_id) {
         localStorage.setItem('quizlet', new_quizlet_id);
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', `${address}/get/quizlet?${params}`);
+        xhr.open('GET', `${address}/get/quizlet/data?${params}`);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.onload = function () {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
+                localStorage.setItem('quizlet', new_quizlet_id);
                 console.log(response);
                 gameTitle.textContent = response.quizlet_title;
                 quizlet_id = response.quizlet_id;
