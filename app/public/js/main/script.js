@@ -123,7 +123,7 @@ window.onload = async () => {
             // Insert the dropdown menu after the URL input
             const urlInputParent = urlInput.parentElement;
             urlInputParent.insertBefore(dropdownContainer, urlInput.nextSibling);
-            dropdownMenu.size = dropdownMenu.options.length;
+            dropdownMenu.size = dropdownMenu.options.length > 4 ? 4 : dropdownMenu.options.length;
 
             urlInput.addEventListener('input', (event) => {
                 const searchTerm = urlInput.value;
@@ -778,7 +778,7 @@ const getNewQuizletData = () => {
         current_quizlet_id = currentQuizletMatch[1];
     }
 
-    if (new_quizlet_id != current_quizlet_id) {
+    if (new_quizlet_id !== current_quizlet_id) {
         localStorage.setItem('quizlet', new_quizlet_id);
         const xhr = new XMLHttpRequest();
         xhr.open('GET', `${address}/get/quizlet?${params}`);
