@@ -201,11 +201,11 @@ ruby {
 @media (min-width: 768px) {
   #term {
     font-size: 5vw;
-    bottom: 9.25vw;
+    bottom: 9.25vh;
   }
   #def {
     font-size: 10vw;
-    bottom: -3.5vw;
+    bottom: calc(-14vh / 2);
   }
   #word_count {
     font-size: 2vw;
@@ -216,11 +216,11 @@ ruby {
 @media (max-width: 768px) {
   #term {
     font-size: 10vw;
-    bottom: 27.25vw;
+    bottom: 27.25vh;
   }
   #def {
     font-size: 20vw;
-    bottom: 9.5vw;
+    bottom: calc(1vh / 2);
   }
   #word_count {
     font-size: 4vw;

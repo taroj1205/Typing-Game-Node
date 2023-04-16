@@ -349,6 +349,7 @@ async function validateCredentials(db, user, username, password) {
 app.get('/get/quizlet/data', async (req, res) => {
     try {
         let quizlet_id = req.query.quizlet_id;
+        console.log(quizlet_id);
         if (!quizlet_id) {
             const quizlet_id_match = req.query.url.match(/quizlet\.com\/(?:[a-z]{2}\/)?(\d+)/);
             if (quizlet_id_match) {
