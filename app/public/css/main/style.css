@@ -201,7 +201,7 @@ ruby {
 @media (min-width: 768px) {
   #term {
     font-size: 5vw;
-    bottom: 9.25vh;
+    bottom: 8.25vh;
   }
   #def {
     font-size: 10vw;

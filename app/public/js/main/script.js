@@ -546,8 +546,15 @@ const typing = (num, def, term, username, response) => {
 		const inputText = event.data;
 		const inputLength = inputText ? inputText.length : 0;
 
-		if (event.inputType === 'deleteContentBackward' && num > 0) {
-			num -= 1;
+		if (event.inputType === 'deleteContentBackward') {
+			if (num > 0) {
+				num -= 1;
+				typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
+				notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
+				document.querySelector("#def").innerHTML = typedOut + notYet;
+			} else {
+				return;
+			}
 		} else {
 			let correct = true;
 			for (let i = 0; i < inputLength; i++) {
@@ -566,13 +573,15 @@ const typing = (num, def, term, username, response) => {
 					submitTyped(def, term, username, response);
 					sendPlaytime(username);
 					newWord(username, response);
+				} else {
+					document.querySelector("#def").innerHTML = typedOut + notYet;
 				}
 			} else {
 				typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
 				notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
+				document.querySelector("#def").innerHTML = typedOut + notYet;
 			}
 		}
-		document.querySelector("#def").innerHTML = typedOut + notYet;
 	};
 	typingInput.addEventListener('input', onInput);
 	typingInput.addEventListener('compositionstart', () => {
@@ -582,22 +591,6 @@ const typing = (num, def, term, username, response) => {
 		composing = false;
 		console.log('Composed: ' + event.data);
 		onInput(event);
-	});
-	typingInput.addEventListener('keydown', (event) => {
-		if (event.key === 'Backspace') {
-			event.preventDefault();
-			if (num > 0) {
-				num -= 1;
-				typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
-				notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
-				document.querySelector("#def").innerHTML = typedOut + notYet;
-			} else {
-				num = 0;
-				typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
-				notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
-				document.querySelector("#def").innerHTML = typedOut + notYet;
-			}
-		}
 	});
 };
 
