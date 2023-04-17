@@ -1,29 +1,27 @@
-urlInput = document.getElementById("url");
-usernameInput = document.getElementById("username");
-passwordInput = document.getElementById("password");
-submitButton = document.getElementById("submit");
-termText = document.getElementById("term");
-defText = document.getElementById("def");
-loginSection = document.getElementById("login");
-gameSection = document.getElementById("game");
-statsSection = document.getElementById("stats");
-titleHTML = document.querySelector("title")
-typingInput = document.getElementById("typingInput");
-historyDIV = document.getElementById("history");
-menuToggle = document.getElementById("menuToggle");
-menuScene = document.getElementById("menu");
-gameTitle = document.getElementById("title");
-wordCountText = document.getElementById("word_count");
-linkText = document.getElementById("link");
-toggleFurigana = document.getElementById("toggleFurigana");
-furiganaSettingStatus = toggleFurigana.textContent;
-quizletLinkSettings = document.getElementById("quizletLinkSettings");
-submitQuizletButton = document.getElementById("submitQuizlet");
-setting_username = document.getElementById("setting_username");
-logoutButton = document.getElementById("logout");
-loadingSection = document.getElementById("loading");
-loadingText = loadingSection.querySelector('p');
-pingText = document.getElementById("ping");
+const urlInput = document.getElementById("url");
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const submitButton = document.getElementById("submit");
+const termText = document.getElementById("term");
+const defText = document.getElementById("def");
+const loginSection = document.getElementById("login");
+const gameSection = document.getElementById("game");
+const statsSection = document.getElementById("stats");
+const titleHTML = document.querySelector("title")
+const typingInput = document.getElementById("typingInput");
+const historyDIV = document.getElementById("history");
+const menuToggle = document.getElementById("menuToggle");
+const menuScene = document.getElementById("menu");
+const gameTitle = document.getElementById("title");
+const wordCountText = document.getElementById("word_count");
+const linkText = document.getElementById("link");
+const toggleFurigana = document.getElementById("toggleFurigana");
+const quizletLinkSettings = document.getElementById("quizletLinkSettings");
+const submitQuizletButton = document.getElementById("submitQuizlet");
+const setting_username = document.getElementById("setting_username");
+const logoutButton = document.getElementById("logout");
+const loadingSection = document.getElementById("loading");
+const loadingText = loadingSection.querySelector('p');
 
 const address = '';
 
@@ -101,6 +99,10 @@ window.onload = async () => {
 		urlInput.focus();
 	}, 500);
 
+	getQuizletList();
+}
+
+const getQuizletList = () => {
 	fetch('/get/quizlet/list')
 		.then((response) => response.json())
 		.then((quizlets) => {
@@ -140,57 +142,11 @@ window.onload = async () => {
 			filterQuizletList(quizlets, dropdownMenu);
 
 			// Add event listener to the URL input
-			/**
-			 * Handles the keydown event for the URL input.
-			 * @param {KeyboardEvent} event - The keydown event.
-			 */
-			const onUrlInputKeyDown = (event) => {
-				const dropdownMenu = document.querySelector('#dropdown-menu');
-				if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-					// Up or down arrow key is pressed
-					if (dropdownMenu && dropdownMenu.options.length > 0) {
-						// Get the current selected index
-						let selectedIndex = dropdownMenu.selectedIndex;
-						if (selectedIndex === -1) {
-							// No option is selected, default to the first one
-							selectedIndex = 0;
-						}
-						// Set the new selected index based on the arrow key pressed
-						if (event.key === 'ArrowUp' && selectedIndex > 0) {
-							selectedIndex--;
-						} else if (event.key === 'ArrowDown' && selectedIndex < dropdownMenu.options.length - 1) {
-							selectedIndex++;
-						}
-						updateSelectedOption(selectedIndex, dropdownMenu);
-					}
-				}
-			};
-
-			/**
-			 * Updates the selected option in the dropdown menu and the background colors of the input and options.
-			 * @param {number} selectedIndex - The index of the new selected option.
-			 * @param {HTMLSelectElement} dropdownMenu - The dropdown menu element.
-			 */
-			const updateSelectedOption = (selectedIndex, dropdownMenu) => {
-				// Set the new value and background color of the input and options
-				const selectedOption = dropdownMenu.options[selectedIndex];
-				urlInput.value = selectedOption.textContent;
-				selectedOption.style.backgroundColor = '#cecece';
-				if (selectedIndex > 0) {
-					dropdownMenu.options[selectedIndex - 1].style.backgroundColor = 'white';
-				}
-				if (selectedIndex < dropdownMenu.options.length - 1) {
-					dropdownMenu.options[selectedIndex + 1].style.backgroundColor = 'white';
-				}
-				// Update the selected index in the dropdown menu
-				dropdownMenu.selectedIndex = selectedIndex;
-			};
-
-			// Add event listener to the URL input
 			urlInput.addEventListener('keydown', onUrlInputKeyDown);
 		})
 		.catch((error) => console.error(error));
 }
+
 const selectQuizlet = (option) => {
 	const selectedQuizletId = option.value;
 	console.log(selectedQuizletId);
@@ -203,6 +159,53 @@ const selectQuizlet = (option) => {
 		}
 	}, 500);
 }
+
+// Add event listener to the URL input
+/**
+ * Handles the keydown event for the URL input.
+ * @param {KeyboardEvent} event - The keydown event.
+ */
+const onUrlInputKeyDown = (event) => {
+	const dropdownMenu = document.querySelector('#dropdown-menu');
+	if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+		// Up or down arrow key is pressed
+		if (dropdownMenu && dropdownMenu.options.length > 0) {
+			// Get the current selected index
+			let selectedIndex = dropdownMenu.selectedIndex;
+			if (selectedIndex === -1) {
+				// No option is selected, default to the first one
+				selectedIndex = 0;
+			}
+			// Set the new selected index based on the arrow key pressed
+			if (event.key === 'ArrowUp' && selectedIndex > 0) {
+				selectedIndex--;
+			} else if (event.key === 'ArrowDown' && selectedIndex < dropdownMenu.options.length - 1) {
+				selectedIndex++;
+			}
+			updateSelectedOption(selectedIndex, dropdownMenu);
+		}
+	}
+};
+
+/**
+ * Updates the selected option in the dropdown menu and the background colors of the input and options.
+ * @param {number} selectedIndex - The index of the new selected option.
+ * @param {HTMLSelectElement} dropdownMenu - The dropdown menu element.
+ */
+const updateSelectedOption = (selectedIndex, dropdownMenu) => {
+	// Set the new value and background color of the input and options
+	const selectedOption = dropdownMenu.options[selectedIndex];
+	urlInput.value = selectedOption.textContent;
+	selectedOption.style.backgroundColor = '#cecece';
+	if (selectedIndex > 0) {
+		dropdownMenu.options[selectedIndex - 1].style.backgroundColor = 'white';
+	}
+	if (selectedIndex < dropdownMenu.options.length - 1) {
+		dropdownMenu.options[selectedIndex + 1].style.backgroundColor = 'white';
+	}
+	// Update the selected index in the dropdown menu
+	dropdownMenu.selectedIndex = selectedIndex;
+};
 
 const filterQuizletList = (quizlets, dropdownMenu) => {
 	const searchTerm = urlInput.value;
@@ -547,13 +550,13 @@ const typing = (num, def, term, username, response) => {
 		const inputLength = inputText ? inputText.length : 0;
 
 		if (event.inputType === 'deleteContentBackward') {
-			if (num > 0) {
+			if (num <= 0) {
+
+			} else {
 				num -= 1;
 				typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
 				notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
 				document.querySelector("#def").innerHTML = typedOut + notYet;
-			} else {
-				return;
 			}
 		} else {
 			let correct = true;
