@@ -692,6 +692,7 @@ const openOverlay = (url, username) => {
         // Remove the overlay when the close button is clicked
         overlay.remove();
         currentOverlay = null;
+        typingInput.focus();
     };
     overlay.appendChild(closeButton);
     // Create an iframe to load the page
@@ -707,6 +708,15 @@ const openOverlay = (url, username) => {
             overlay.remove();
             currentOverlay = null;
             document.removeEventListener('click', () => { });
+            typingInput.focus();
+        }
+    });
+    window.addEventListener('popstate', (event) => {
+        if (currentOverlay === overlay) {
+            console.log('back pressed!');
+            event.preventDefault();
+            overlay.remove();
+            currentOverlay = null;
             typingInput.focus();
         }
     });

@@ -772,6 +772,7 @@ const openOverlay = (url: string, username: string) => {
 		// Remove the overlay when the close button is clicked
 		overlay.remove();
 		currentOverlay = null;
+		typingInput.focus();
 	};
 	overlay.appendChild(closeButton);
 
