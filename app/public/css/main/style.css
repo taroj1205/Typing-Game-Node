@@ -92,6 +92,9 @@ ruby {
 #stats td {
   overflow-x: auto !important;
 }
+#stats div {
+  min-width: 768px;
+}
 
 #stats td:first-child {
   text-align: right;
