@@ -93,6 +93,7 @@ ruby {
   overflow-x: auto !important;
 }
 #stats div {
+  width: 50%;
   min-width: 768px;
 }
 
