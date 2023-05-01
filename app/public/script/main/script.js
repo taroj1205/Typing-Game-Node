@@ -95,48 +95,57 @@ window.onload = () => __awaiter(void 0, void 0, void 0, function* () {
     }, 500);
     getQuizletList();
 });
-const getQuizletList = () => __awaiter(void 0, void 0, void 0, function* () {
-    fetch('/get/quizlet/list')
-        .then((response) => response.json())
-        .then((quizlets) => {
+const getQuizletList = () => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/get/quizlet/list');
+    xhr.onload = () => {
         var _a;
-        // Create dropdown menu container
-        const dropdownContainer = document.createElement('div');
-        dropdownContainer.classList.add('dropdown-container');
-        // Create dropdown menu
-        const dropdownMenu = document.createElement('select');
-        dropdownMenu.id = 'dropdown-menu';
-        dropdownMenu.style.width = '100%';
-        renderDropdownOptions(quizlets, dropdownMenu);
-        dropdownContainer.appendChild(dropdownMenu);
-        // Add event listener to dropdown menu
-        dropdownMenu.addEventListener('change', (event) => {
-            if (event.target instanceof HTMLSelectElement) {
-                selectQuizlet(event.target);
+        if (xhr.status === 200) {
+            const quizlets = JSON.parse(xhr.responseText);
+            // Create dropdown menu container
+            const dropdownContainer = document.createElement('div');
+            dropdownContainer.classList.add('dropdown-container');
+            // Create dropdown menu
+            const dropdownMenu = document.createElement('select');
+            dropdownMenu.id = 'dropdown-menu';
+            dropdownMenu.style.width = '100%';
+            renderDropdownOptions(quizlets, dropdownMenu);
+            dropdownContainer.appendChild(dropdownMenu);
+            // Add event listener to dropdown menu
+            dropdownMenu.addEventListener('change', (event) => {
+                if (event.target instanceof HTMLSelectElement) {
+                    selectQuizlet(event.target);
+                }
+            });
+            // For phones, also listen for click events on the options themselves
+            dropdownMenu.addEventListener('click', (event) => {
+                if (event.target instanceof HTMLSelectElement) {
+                    selectQuizlet(event.target);
+                }
+            });
+            // Set the initial value of the dropdown menu
+            dropdownMenu.value = (_a = localStorage.getItem('quizlet')) !== null && _a !== void 0 ? _a : '';
+            // Insert the dropdown menu after the URL input
+            const urlInputParent = urlInput.parentElement;
+            if (urlInputParent) {
+                urlInputParent.insertBefore(dropdownContainer, urlInput.nextSibling);
             }
-        });
-        // For phones, also listen for click events on the options themselves
-        dropdownMenu.addEventListener('click', (event) => {
-            if (event.target instanceof HTMLSelectElement) {
-                selectQuizlet(event.target);
-            }
-        });
-        // Set the initial value of the dropdown menu
-        dropdownMenu.value = (_a = localStorage.getItem('quizlet')) !== null && _a !== void 0 ? _a : '';
-        // Insert the dropdown menu after the URL input
-        const urlInputParent = urlInput.parentElement;
-        if (urlInputParent) {
-            urlInputParent.insertBefore(dropdownContainer, urlInput.nextSibling);
+            dropdownMenu.size = dropdownMenu.options.length > 4 ? 4 : dropdownMenu.options.length;
+            urlInput.addEventListener('input', (event) => {
+                filterQuizletList(quizlets, dropdownMenu);
+            });
+            // Add event listener to the URL input
+            urlInput.addEventListener('keydown', onUrlInputKeyDown);
         }
-        dropdownMenu.size = dropdownMenu.options.length > 4 ? 4 : dropdownMenu.options.length;
-        urlInput.addEventListener('input', (event) => {
-            filterQuizletList(quizlets, dropdownMenu);
-        });
-        // Add event listener to the URL input
-        urlInput.addEventListener('keydown', onUrlInputKeyDown);
-    })
-        .catch((error) => console.error(error));
-});
+        else {
+            console.error(xhr.statusText);
+        }
+    };
+    xhr.onerror = () => {
+        console.error(xhr.statusText);
+    };
+    xhr.send();
+};
 const selectQuizlet = (option) => {
     const selectedQuizletId = option.value;
     console.log(selectedQuizletId);
@@ -244,6 +253,7 @@ const loading = () => {
 };
 const getUsername = () => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
+    console.log("Getting username");
     const auth_token = (_a = document.cookie
         .split('; ')
         .find(row => row.startsWith('auth_token='))) === null || _a === void 0 ? void 0 : _a.split('=')[1];
@@ -287,26 +297,30 @@ const setVisualViewport = () => {
 setVisualViewport();
 const observer = new ResizeObserver(setVisualViewport);
 observer.observe(document.documentElement);
+/**
+ * Starts the game after fetching the user's history.
+ *
+ * @param {string} username - The user's username.
+ * @param {any} response - The response object.
+ */
 const startGame = (username, response) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(username);
     console.log(response);
     yield getHistory(username, response);
-    setTimeout(() => {
-        clearInterval(loadingInterval);
-        loadingSection.style.display = 'none';
-        loadingText.textContent = 'Loading...';
-        menuToggle.style.display = 'block';
-        loginSection.style.display = 'none';
-        gameSection.style.display = 'block';
-        statsSection.style.display = 'block';
-        typingInput.style.display = 'block';
-        gameTitle.textContent = response.quizlet_title;
-        let quizlet_id = response.quizlet_id;
-        submitButton.disabled = false;
-        addLinks(username, quizlet_id);
-        playtime.start();
-        newWord(username, response);
-    }, 1500);
+    clearInterval(loadingInterval);
+    loadingSection.style.display = 'none';
+    loadingText.textContent = 'Loading...';
+    menuToggle.style.display = 'block';
+    loginSection.style.display = 'none';
+    gameSection.style.display = 'block';
+    statsSection.style.display = 'block';
+    typingInput.style.display = 'block';
+    gameTitle.textContent = response.quizlet_title;
+    let quizlet_id = response.quizlet_id;
+    submitButton.disabled = false;
+    addLinks(username, quizlet_id);
+    playtime.start();
+    newWord(username, response);
 });
 const login = () => {
     submitButton.disabled = true;
@@ -458,6 +472,9 @@ const newWord = (username, response) => __awaiter(void 0, void 0, void 0, functi
     }
     termText.textContent = term;
     defText.textContent = def;
+    // Add the hidden notes to termText and defText
+    termText.setAttribute('data-random-index', String(randomIndex));
+    defText.setAttribute('data-random-index', String(randomIndex));
     titleHTML.textContent = 'タイピングゲーム風単語学習 - ' + response.quizlet_title;
     typingInput.focus();
     let termFurigana;
@@ -537,7 +554,8 @@ const typing = (num, def, term, username, response, termFurigana, defFurigana) =
                 if (num >= def.length) {
                     const wordCount = parseInt((_b = (_a = wordCountText === null || wordCountText === void 0 ? void 0 : wordCountText.textContent) === null || _a === void 0 ? void 0 : _a.split(': ')[1]) !== null && _b !== void 0 ? _b : '0');
                     wordCountText.innerHTML = `Words: ${wordCount + 1}`;
-                    submitTyped(def, term, username, response);
+                    let randomIndex = termText.getAttribute('data-random-index');
+                    submitTyped(def, term, randomIndex, username, response);
                     sendPlaytime(username);
                     newWord(username, response);
                 }
@@ -562,7 +580,7 @@ const typing = (num, def, term, username, response, termFurigana, defFurigana) =
         onInput(event);
     });
 };
-const submitTyped = (def, term, username, response) => {
+const submitTyped = (def, term, randomIndex, username, response) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `/post/typed`);
     xhr.onload = function () {
@@ -585,6 +603,7 @@ const submitTyped = (def, term, username, response) => {
     const data = {
         term,
         def,
+        randomIndex,
         username,
         quizlet_id
     };
@@ -708,15 +727,6 @@ const openOverlay = (url, username) => {
             overlay.remove();
             currentOverlay = null;
             document.removeEventListener('click', () => { });
-            typingInput.focus();
-        }
-    });
-    window.addEventListener('popstate', (event) => {
-        if (currentOverlay === overlay) {
-            console.log('back pressed!');
-            event.preventDefault();
-            overlay.remove();
-            currentOverlay = null;
             typingInput.focus();
         }
     });

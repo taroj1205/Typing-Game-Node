@@ -102,10 +102,12 @@ window.onload = async () => {
 	getQuizletList();
 }
 
-const getQuizletList = async () => {
-	fetch('/get/quizlet/list')
-		.then((response) => response.json())
-		.then((quizlets) => {
+const getQuizletList = () => {
+	const xhr = new XMLHttpRequest();
+	xhr.open('GET', '/get/quizlet/list');
+	xhr.onload = () => {
+		if (xhr.status === 200) {
+			const quizlets = JSON.parse(xhr.responseText);
 			// Create dropdown menu container
 			const dropdownContainer = document.createElement('div');
 			dropdownContainer.classList.add('dropdown-container');
@@ -147,9 +149,15 @@ const getQuizletList = async () => {
 
 			// Add event listener to the URL input
 			urlInput.addEventListener('keydown', onUrlInputKeyDown);
-		})
-		.catch((error) => console.error(error));
-}
+		} else {
+			console.error(xhr.statusText);
+		}
+	};
+	xhr.onerror = () => {
+		console.error(xhr.statusText);
+	};
+	xhr.send();
+};
 
 const selectQuizlet = (option: HTMLSelectElement) => {
 	const selectedQuizletId = option.value;
@@ -269,6 +277,7 @@ const loading = () => {
 }
 
 const getUsername = async () => {
+	console.log("Getting username");
 	const auth_token = document.cookie
 		.split('; ')
 		.find(row => row.startsWith('auth_token='))
@@ -321,26 +330,30 @@ setVisualViewport();
 const observer = new ResizeObserver(setVisualViewport);
 observer.observe(document.documentElement);
 
+/**
+ * Starts the game after fetching the user's history.
+ * 
+ * @param {string} username - The user's username.
+ * @param {any} response - The response object.
+ */
 const startGame = async (username: string, response: any) => {
 	console.log(username);
 	console.log(response);
 	await getHistory(username, response);
-	setTimeout(() => {
-		clearInterval(loadingInterval);
-		loadingSection.style.display = 'none';
-		loadingText.textContent = 'Loading...';
-		menuToggle.style.display = 'block';
-		loginSection.style.display = 'none';
-		gameSection.style.display = 'block';
-		statsSection.style.display = 'block';
-		typingInput.style.display = 'block';
-		gameTitle.textContent = response.quizlet_title;
-		let quizlet_id: number = response.quizlet_id;
-		submitButton.disabled = false;
-		addLinks(username, quizlet_id);
-		playtime.start();
-		newWord(username, response);
-	}, 1500);
+	clearInterval(loadingInterval);
+	loadingSection.style.display = 'none';
+	loadingText.textContent = 'Loading...';
+	menuToggle.style.display = 'block';
+	loginSection.style.display = 'none';
+	gameSection.style.display = 'block';
+	statsSection.style.display = 'block';
+	typingInput.style.display = 'block';
+	gameTitle.textContent = response.quizlet_title;
+	let quizlet_id: number = response.quizlet_id;
+	submitButton.disabled = false;
+	addLinks(username, quizlet_id);
+	playtime.start();
+	newWord(username, response);
 }
 
 const login = () => {
@@ -505,6 +518,9 @@ const newWord = async (username: string, response: QuizletResponse) => {
 
 	termText.textContent = term;
 	defText.textContent = def;
+	// Add the hidden notes to termText and defText
+	termText.setAttribute('data-random-index', String(randomIndex));
+	defText.setAttribute('data-random-index', String(randomIndex));
 	titleHTML.textContent = 'タイピングゲーム風単語学習 - ' + response.quizlet_title;
 	typingInput.focus();
 
@@ -603,7 +619,8 @@ const typing = (
 				if (num >= def.length) {
 					const wordCount = parseInt(wordCountText?.textContent?.split(': ')[1] ?? '0');
 					wordCountText.innerHTML = `Words: ${wordCount + 1}`;
-					submitTyped(def, term, username, response);
+					let randomIndex = termText.getAttribute('data-random-index')!;
+					submitTyped(def, term, randomIndex, username, response);
 					sendPlaytime(username);
 					newWord(username, response);
 				} else {
@@ -630,6 +647,7 @@ const typing = (
 const submitTyped = (
 	def: string,
 	term: string,
+	randomIndex: string,
 	username: string,
 	response: { quizlet_id: string },
 ) => {
@@ -654,6 +672,7 @@ const submitTyped = (
 	const data = {
 		term,
 		def,
+		randomIndex,
 		username,
 		quizlet_id
 	};

@@ -3,5 +3,5 @@ data
 .idea
 userData
 node_modules
-/app/log/
-.vscode/launch.json
+.vscode
+/app/logs
