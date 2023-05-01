@@ -502,7 +502,6 @@ app.post('/post/typed', (req, res) => {
 			} = row;
 			db.serialize(() => {
 				db.run('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, user_id INTEGER, quizlet_id INTEGER, randomIndex INTEGER, def TEXT, term TEXT, created_at TEXT)');
-				db.run('ALTER TABLE history ADD COLUMN randomIndex INTEGER AFTER quizlet_id');
 				const timeNow = getTimestamp();
 				console.log(timeNow); // Output: "2023-03-29 08:15:30"
 				db.run('INSERT INTO history (user_id, quizlet_id, randomIndex, def, term, created_at) VALUES (?, ?, ?, ?, ?, ?)', [id, quizlet_id, randomIndex, def, term, timeNow], (err: any) => {
