@@ -307,11 +307,6 @@ const startGame = (username, response) => __awaiter(void 0, void 0, void 0, func
     console.log(username);
     console.log(response);
     yield getHistory(username, response);
-    gameTitle.textContent = response.quizlet_title;
-    let quizlet_id = response.quizlet_id;
-    submitButton.disabled = false;
-    addLinks(username, quizlet_id);
-    playtime.start();
     clearInterval(loadingInterval);
     loadingSection.style.display = 'none';
     loadingText.textContent = 'Loading...';
@@ -320,6 +315,11 @@ const startGame = (username, response) => __awaiter(void 0, void 0, void 0, func
     gameSection.style.display = 'block';
     statsSection.style.display = 'block';
     typingInput.style.display = 'block';
+    gameTitle.textContent = response.quizlet_title;
+    let quizlet_id = response.quizlet_id;
+    submitButton.disabled = false;
+    addLinks(username, quizlet_id);
+    playtime.start();
     newWord(username, response);
 });
 const login = () => {
@@ -612,32 +612,25 @@ const submitTyped = (def, term, randomIndex, username, response) => {
 const getHistory = (username, response) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(username);
     username = username.trim();
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', `/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
-        xhr.onload = function () {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (xhr.status === 200) {
-                    const response = JSON.parse(xhr.responseText);
-                    console.log(response);
-                    yield displayHistory(response);
-                    resolve(response);
-                }
-                else {
-                    console.error(xhr.statusText);
-                    console.error('Request failed.');
-                    reject(xhr.statusText);
-                }
-            });
-        };
-        xhr.onerror = function () {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            console.log(response);
+            displayHistory(response);
+        }
+        else {
             console.error(xhr.statusText);
             console.error('Request failed.');
-            reject(xhr.statusText);
-        };
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.send();
-    });
+        }
+    };
+    xhr.onerror = function () {
+        console.error(xhr.statusText);
+        console.error('Request failed.');
+    };
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send();
 });
 const displayHistory = (response) => {
     const history = response.history;

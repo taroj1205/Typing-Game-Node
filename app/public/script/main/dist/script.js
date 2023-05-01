@@ -366,11 +366,6 @@ var startGame = function (username, response) { return __awaiter(_this, void 0, 
                 return [4 /*yield*/, getHistory(username, response)];
             case 1:
                 _a.sent();
-                gameTitle.textContent = response.quizlet_title;
-                quizlet_id = response.quizlet_id;
-                submitButton.disabled = false;
-                addLinks(username, quizlet_id);
-                playtime.start();
                 clearInterval(loadingInterval);
                 loadingSection.style.display = 'none';
                 loadingText.textContent = 'Loading...';
@@ -379,6 +374,11 @@ var startGame = function (username, response) { return __awaiter(_this, void 0, 
                 gameSection.style.display = 'block';
                 statsSection.style.display = 'block';
                 typingInput.style.display = 'block';
+                gameTitle.textContent = response.quizlet_title;
+                quizlet_id = response.quizlet_id;
+                submitButton.disabled = false;
+                addLinks(username, quizlet_id);
+                playtime.start();
                 newWord(username, response);
                 return [2 /*return*/];
         }
@@ -682,44 +682,30 @@ var submitTyped = function (def, term, randomIndex, username, response) {
     xhr.send(JSON.stringify(data));
 };
 var getHistory = function (username, response) { return __awaiter(_this, void 0, void 0, function () {
+    var xhr;
     return __generator(this, function (_a) {
         console.log(username);
         username = username.trim();
-        return [2 /*return*/, new Promise(function (resolve, reject) {
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', "/get/history?username=" + username + "&quizlet_id=" + response.quizlet_id);
-                xhr.onload = function () {
-                    return __awaiter(this, void 0, void 0, function () {
-                        var response_2;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    if (!(xhr.status === 200)) return [3 /*break*/, 2];
-                                    response_2 = JSON.parse(xhr.responseText);
-                                    console.log(response_2);
-                                    return [4 /*yield*/, displayHistory(response_2)];
-                                case 1:
-                                    _a.sent();
-                                    resolve(response_2);
-                                    return [3 /*break*/, 3];
-                                case 2:
-                                    console.error(xhr.statusText);
-                                    console.error('Request failed.');
-                                    reject(xhr.statusText);
-                                    _a.label = 3;
-                                case 3: return [2 /*return*/];
-                            }
-                        });
-                    });
-                };
-                xhr.onerror = function () {
-                    console.error(xhr.statusText);
-                    console.error('Request failed.');
-                    reject(xhr.statusText);
-                };
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.send();
-            })];
+        xhr = new XMLHttpRequest();
+        xhr.open('GET', "/get/history?username=" + username + "&quizlet_id=" + response.quizlet_id);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var response_2 = JSON.parse(xhr.responseText);
+                console.log(response_2);
+                displayHistory(response_2);
+            }
+            else {
+                console.error(xhr.statusText);
+                console.error('Request failed.');
+            }
+        };
+        xhr.onerror = function () {
+            console.error(xhr.statusText);
+            console.error('Request failed.');
+        };
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send();
+        return [2 /*return*/];
     });
 }); };
 var displayHistory = function (response) {
