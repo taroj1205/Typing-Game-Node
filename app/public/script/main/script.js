@@ -307,19 +307,6 @@ const startGame = (username, response) => __awaiter(void 0, void 0, void 0, func
     console.log(username);
     console.log(response);
     yield getHistory(username, response);
-    clearInterval(loadingInterval);
-    loadingText.textContent = 'Loading...';
-    menuToggle.style.display = 'block';
-    loginSection.style.display = 'none';
-    gameSection.style.display = 'block';
-    statsSection.style.display = 'block';
-    typingInput.style.display = 'block';
-    gameTitle.textContent = response.quizlet_title;
-    let quizlet_id = response.quizlet_id;
-    submitButton.disabled = false;
-    addLinks(username, quizlet_id);
-    playtime.start();
-    newWord(username, response);
 });
 const login = () => {
     submitButton.disabled = true;
@@ -664,7 +651,6 @@ const displayHistory = (response) => {
             historyDIV.innerHTML = historyHTML;
             updateFurigana();
         }
-        loadingSection.style.display = 'none';
     }).catch((error) => {
         console.error(error);
         historyHTML += '</tbody></table>';
@@ -673,6 +659,20 @@ const displayHistory = (response) => {
             updateFurigana();
         }
     });
+    loadingSection.style.display = 'none';
+    clearInterval(loadingInterval);
+    loadingText.textContent = 'Loading...';
+    menuToggle.style.display = 'block';
+    loginSection.style.display = 'none';
+    gameSection.style.display = 'block';
+    statsSection.style.display = 'block';
+    typingInput.style.display = 'block';
+    gameTitle.textContent = response.quizlet_title;
+    let quizlet_id = response.quizlet_id;
+    submitButton.disabled = false;
+    addLinks(username, quizlet_id);
+    playtime.start();
+    newWord(username, response);
 };
 const addLinks = (username, quizlet_id) => {
     linkText.innerHTML = '';

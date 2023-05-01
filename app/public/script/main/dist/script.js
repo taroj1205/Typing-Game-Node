@@ -357,7 +357,6 @@ observer.observe(document.documentElement);
  * @param {any} response - The response object.
  */
 var startGame = function (username, response) { return __awaiter(_this, void 0, void 0, function () {
-    var quizlet_id;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -366,19 +365,6 @@ var startGame = function (username, response) { return __awaiter(_this, void 0, 
                 return [4 /*yield*/, getHistory(username, response)];
             case 1:
                 _a.sent();
-                clearInterval(loadingInterval);
-                loadingText.textContent = 'Loading...';
-                menuToggle.style.display = 'block';
-                loginSection.style.display = 'none';
-                gameSection.style.display = 'block';
-                statsSection.style.display = 'block';
-                typingInput.style.display = 'block';
-                gameTitle.textContent = response.quizlet_title;
-                quizlet_id = response.quizlet_id;
-                submitButton.disabled = false;
-                addLinks(username, quizlet_id);
-                playtime.start();
-                newWord(username, response);
                 return [2 /*return*/];
         }
     });
@@ -743,7 +729,6 @@ var displayHistory = function (response) {
             historyDIV.innerHTML = historyHTML;
             updateFurigana();
         }
-        loadingSection.style.display = 'none';
     })["catch"](function (error) {
         console.error(error);
         historyHTML += '</tbody></table>';
@@ -752,6 +737,20 @@ var displayHistory = function (response) {
             updateFurigana();
         }
     });
+    loadingSection.style.display = 'none';
+    clearInterval(loadingInterval);
+    loadingText.textContent = 'Loading...';
+    menuToggle.style.display = 'block';
+    loginSection.style.display = 'none';
+    gameSection.style.display = 'block';
+    statsSection.style.display = 'block';
+    typingInput.style.display = 'block';
+    gameTitle.textContent = response.quizlet_title;
+    var quizlet_id = response.quizlet_id;
+    submitButton.disabled = false;
+    addLinks(username, quizlet_id);
+    playtime.start();
+    newWord(username, response);
 };
 var addLinks = function (username, quizlet_id) {
     linkText.innerHTML = '';
