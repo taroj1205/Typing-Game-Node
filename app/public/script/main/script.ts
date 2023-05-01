@@ -340,6 +340,20 @@ const startGame = async (username: string, response: any) => {
 	console.log(username);
 	console.log(response);
 	await getHistory(username, response);
+	gameTitle.textContent = response.quizlet_title;
+	let quizlet_id: number = response.quizlet_id;
+	submitButton.disabled = false;
+	addLinks(username, quizlet_id);
+	playtime.start();
+	clearInterval(loadingInterval);
+	loadingSection.style.display = 'none';
+	loadingText.textContent = 'Loading...';
+	menuToggle.style.display = 'block';
+	loginSection.style.display = 'none';
+	gameSection.style.display = 'block';
+	statsSection.style.display = 'block';
+	typingInput.style.display = 'block';
+	newWord(username, response);
 }
 
 const login = () => {
@@ -668,24 +682,29 @@ const submitTyped = (
 const getHistory = async (username: string, response: { quizlet_id: string }) => {
 	console.log(username);
 	username = username.trim();
-	const xhr = new XMLHttpRequest();
-	xhr.open('GET', `/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
-	xhr.onload = function () {
-		if (xhr.status === 200) {
-			const response = JSON.parse(xhr.responseText);
-			console.log(response);
-			displayHistory(response);
-		} else {
+	return new Promise((resolve, reject) => {
+		const xhr = new XMLHttpRequest();
+		xhr.open('GET', `/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
+		xhr.onload = async function () {
+			if (xhr.status === 200) {
+				const response = JSON.parse(xhr.responseText);
+				console.log(response);
+				await displayHistory(response);
+				resolve(response);
+			} else {
+				console.error(xhr.statusText);
+				console.error('Request failed.');
+				reject(xhr.statusText);
+			}
+		};
+		xhr.onerror = function () {
 			console.error(xhr.statusText);
 			console.error('Request failed.');
-		}
-	};
-	xhr.onerror = function () {
-		console.error(xhr.statusText);
-		console.error('Request failed.');
-	};
-	xhr.setRequestHeader('Content-Type', 'application/json');
-	xhr.send();
+			reject(xhr.statusText);
+		};
+		xhr.setRequestHeader('Content-Type', 'application/json');
+		xhr.send();
+	});
 };
 
 const displayHistory = (response: { history: { term: string; def: string; }[]; }) => {
@@ -732,20 +751,6 @@ const displayHistory = (response: { history: { term: string; def: string; }[]; }
 			updateFurigana();
 		}
 	});
-	loadingSection.style.display = 'none';
-	clearInterval(loadingInterval);
-	loadingText.textContent = 'Loading...';
-	menuToggle.style.display = 'block';
-	loginSection.style.display = 'none';
-	gameSection.style.display = 'block';
-	statsSection.style.display = 'block';
-	typingInput.style.display = 'block';
-	gameTitle.textContent = response.quizlet_title;
-	let quizlet_id: number = response.quizlet_id;
-	submitButton.disabled = false;
-	addLinks(username, quizlet_id);
-	playtime.start();
-	newWord(username, response);
 }
 
 const addLinks = (username: string, quizlet_id: number) => {
