@@ -498,7 +498,6 @@ const newWord = (username, response) => __awaiter(void 0, void 0, void 0, functi
         termText.style.fontSize = `${termFontSize}px`;
     }
     fixTextPosition();
-    loadingSection.style.display = 'none';
     typing(num, def, term, username, response, termFurigana, defFurigana);
 });
 const fixTextPosition = () => {
@@ -665,6 +664,7 @@ const displayHistory = (response) => {
             historyDIV.innerHTML = historyHTML;
             updateFurigana();
         }
+        loadingSection.style.display = 'none';
     }).catch((error) => {
         console.error(error);
         historyHTML += '</tbody></table>';

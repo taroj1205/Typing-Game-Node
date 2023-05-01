@@ -551,8 +551,6 @@ const newWord = async (username: string, response: QuizletResponse) => {
 
 	fixTextPosition();
 
-	loadingSection.style.display = 'none';
-
 	typing(num, def, term, username, response, termFurigana, defFurigana);
 }
 
@@ -739,6 +737,7 @@ const displayHistory = (response: { history: { term: string; def: string; }[]; }
 			historyDIV.innerHTML = historyHTML!;
 			updateFurigana();
 		}
+		loadingSection.style.display = 'none';
 	}).catch((error) => {
 		console.error(error);
 		historyHTML += '</tbody></table>';

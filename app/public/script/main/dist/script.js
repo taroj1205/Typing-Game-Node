@@ -567,7 +567,6 @@ var newWord = function (username, response) { return __awaiter(_this, void 0, vo
                     termText.style.fontSize = termFontSize + "px";
                 }
                 fixTextPosition();
-                loadingSection.style.display = 'none';
                 typing(num, def, term, username, response, termFurigana, defFurigana);
                 return [2 /*return*/];
         }
@@ -744,6 +743,7 @@ var displayHistory = function (response) {
             historyDIV.innerHTML = historyHTML;
             updateFurigana();
         }
+        loadingSection.style.display = 'none';
     })["catch"](function (error) {
         console.error(error);
         historyHTML += '</tbody></table>';
