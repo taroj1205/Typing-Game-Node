@@ -367,7 +367,6 @@ var startGame = function (username, response) { return __awaiter(_this, void 0, 
             case 1:
                 _a.sent();
                 clearInterval(loadingInterval);
-                loadingSection.style.display = 'none';
                 loadingText.textContent = 'Loading...';
                 menuToggle.style.display = 'block';
                 loginSection.style.display = 'none';
@@ -568,6 +567,7 @@ var newWord = function (username, response) { return __awaiter(_this, void 0, vo
                     termText.style.fontSize = termFontSize + "px";
                 }
                 fixTextPosition();
+                loadingSection.style.display = 'none';
                 typing(num, def, term, username, response, termFurigana, defFurigana);
                 return [2 /*return*/];
         }

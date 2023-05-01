@@ -341,7 +341,6 @@ const startGame = async (username: string, response: any) => {
 	console.log(response);
 	await getHistory(username, response);
 	clearInterval(loadingInterval);
-	loadingSection.style.display = 'none';
 	loadingText.textContent = 'Loading...';
 	menuToggle.style.display = 'block';
 	loginSection.style.display = 'none';
@@ -551,6 +550,8 @@ const newWord = async (username: string, response: QuizletResponse) => {
 	}
 
 	fixTextPosition();
+
+	loadingSection.style.display = 'none';
 
 	typing(num, def, term, username, response, termFurigana, defFurigana);
 }

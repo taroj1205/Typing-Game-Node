@@ -308,7 +308,6 @@ const startGame = (username, response) => __awaiter(void 0, void 0, void 0, func
     console.log(response);
     yield getHistory(username, response);
     clearInterval(loadingInterval);
-    loadingSection.style.display = 'none';
     loadingText.textContent = 'Loading...';
     menuToggle.style.display = 'block';
     loginSection.style.display = 'none';
@@ -499,6 +498,7 @@ const newWord = (username, response) => __awaiter(void 0, void 0, void 0, functi
         termText.style.fontSize = `${termFontSize}px`;
     }
     fixTextPosition();
+    loadingSection.style.display = 'none';
     typing(num, def, term, username, response, termFurigana, defFurigana);
 });
 const fixTextPosition = () => {
