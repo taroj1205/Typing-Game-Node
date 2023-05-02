@@ -57,13 +57,9 @@ class Playtime {
 
 const playtime: Playtime = new Playtime();
 
-window.addEventListener('DOMContentLoaded', function () {
-	loadingSection.style.display = 'block';
-	loading();
-});
-
 
 window.onload = async () => {
+	loading();
 	loginSection.style.display = 'none';
 	gameSection.style.display = 'none';
 	statsSection.style.display = 'none';
@@ -91,6 +87,7 @@ window.onload = async () => {
 	if (username) {
 		getWords(username);
 	} else {
+		clearInterval(loadingInterval);
 		loadingSection.style.display = 'none';
 		loginSection.style.display = 'block';
 	}
@@ -399,6 +396,7 @@ const login = () => {
 }
 
 const getWords = async (username: string) => {
+	loading();
 	console.log('Getting words...');
 	let params;
 	let urlValue;
@@ -518,6 +516,7 @@ const newWord = async (username: string, response: QuizletResponse) => {
 
 	termText.textContent = term;
 	defText.textContent = def;
+
 	// Add the hidden notes to termText and defText
 	termText.setAttribute('data-random-index', String(randomIndex));
 	defText.setAttribute('data-random-index', String(randomIndex));
@@ -537,10 +536,41 @@ const newWord = async (username: string, response: QuizletResponse) => {
 		fixTextPosition();
 	});
 
-	let termFontSize = 70;
-	let defFontSize = 120;
+	fixTextPosition();
 
-	while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+	typing(num, def, term, username, response, termFurigana, defFurigana);
+}
+
+const fixTextPosition = () => {
+	const mediaQuery = window.matchMedia("(max-width: 768px)");
+
+	let termFontSize, defFontSize, termBottom, defBottom, wordCountBottom;
+
+	if (mediaQuery.matches) {
+		termFontSize = 10;
+		defFontSize = 20;
+		wordCountBottom = "2.25vw";
+	} else {
+		termFontSize = 5;
+		defFontSize = 10;
+		wordCountBottom = "-6.75vw";
+	}
+
+	const isTermTextFits = () => termText.scrollHeight <= termText.clientHeight;
+	const isDefTextFits = () => defText.scrollHeight <= defText.clientHeight;
+
+	if (isTermTextFits()) {
+		termText.style.fontSize = `${termFontSize}vw`;
+	}
+
+	if (isDefTextFits()) {
+		defText.style.fontSize = `${defFontSize}vw`;
+	}
+
+	termFontSize = 70;
+	defFontSize = 120;
+
+		while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
 		defFontSize--;
 		defText.style.fontSize = `${defFontSize}px`;
 	}
@@ -550,12 +580,6 @@ const newWord = async (username: string, response: QuizletResponse) => {
 		termText.style.fontSize = `${termFontSize}px`;
 	}
 
-	fixTextPosition();
-
-	typing(num, def, term, username, response, termFurigana, defFurigana);
-}
-
-const fixTextPosition = () => {
 	const defRect = defText.getBoundingClientRect();
 	const termRect = termText.getBoundingClientRect();
 	const distance = defRect.top - termRect.bottom;
@@ -565,7 +589,19 @@ const fixTextPosition = () => {
 		console.log('Adjusting position!');
 	}
 
-	wordCountText.style.bottom = `calc(${defText.style.bottom} - 30)px`;
+	// const defStyles = window.getComputedStyle(defText);
+
+	// wordCountText.style.bottom = `calc(${window.getComputedStyle(defText).getPropertyValue("bottom") } - 30)px`;
+}
+
+const checkAndSetStyle = (element: any, fontSize: any, bottom: any) => {
+	const containerHeight = element.parentNode.clientHeight;
+	const contentHeight = element.scrollHeight;
+	const newFontSize = (containerHeight / contentHeight) * fontSize;
+	if (newFontSize <= fontSize) {
+		element.style.fontSize = `${newFontSize}vw`;
+		element.style.bottom = bottom;
+	}
 }
 
 let composing = false;
@@ -617,6 +653,9 @@ const typing = (
 				let notYet = "<span style='color: #1fd755;' id='notYet'>" + defHtml.substring(num + inputLength) + "</span>";
 				num += inputLength;
 				if (num >= def.length) {
+					// Remove input and compositionend event listeners
+					typingInput.removeEventListener('input', onInput as EventListener);
+					typingInput.removeEventListener('compositionend', () => { });
 					const wordCount = parseInt(wordCountText?.textContent?.split(': ')[1] ?? '0');
 					wordCountText.innerHTML = `Words: ${wordCount + 1}`;
 					let randomIndex = termText.getAttribute('data-random-index')!;
@@ -682,24 +721,29 @@ const submitTyped = (
 const getHistory = async (username: string, response: { quizlet_id: string }) => {
 	console.log(username);
 	username = username.trim();
-	const xhr = new XMLHttpRequest();
-	xhr.open('GET', `/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
-	xhr.onload = function () {
-		if (xhr.status === 200) {
-			const response = JSON.parse(xhr.responseText);
-			console.log(response);
-			displayHistory(response);
-		} else {
+	return new Promise((resolve, reject) => {
+		const xhr = new XMLHttpRequest();
+		xhr.open('GET', `/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
+		xhr.onload = async function () {
+			if (xhr.status === 200) {
+				const response = JSON.parse(xhr.responseText);
+				console.log(response);
+				await displayHistory(response);
+				resolve(response);
+			} else {
+				console.error(xhr.statusText);
+				console.error('Request failed.');
+				reject(xhr.statusText);
+			}
+		};
+		xhr.onerror = function () {
 			console.error(xhr.statusText);
 			console.error('Request failed.');
-		}
-	};
-	xhr.onerror = function () {
-		console.error(xhr.statusText);
-		console.error('Request failed.');
-	};
-	xhr.setRequestHeader('Content-Type', 'application/json');
-	xhr.send();
+			reject(xhr.statusText);
+		};
+		xhr.setRequestHeader('Content-Type', 'application/json');
+		xhr.send();
+	});
 };
 
 const displayHistory = (response: { history: { term: string; def: string; }[]; }) => {
@@ -727,7 +771,7 @@ const displayHistory = (response: { history: { term: string; def: string; }[]; }
 		promises.push(Promise.all([termPromise, defPromise]));
 	}
 
-	Promise.all(promises).then((results) => {
+	return Promise.all(promises).then((results) => {
 		for (let i = 0; i < results.length; i++) {
 			const termWithFurigana = results[i][0];
 			const defWithFurigana = results[i][1];

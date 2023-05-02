@@ -11,6 +11,7 @@ body {
   overflow: hidden;
   font-size: 16px;
   height: var(--vvh);
+  transition: 0s;
 }
 
 #login, #game, #loading {
@@ -205,7 +206,7 @@ ruby {
   }
   #def {
     font-size: 10vw;
-    bottom: calc(-14vh / 2);
+    bottom: -7vh;
   }
   #word_count {
     font-size: 2vw;
@@ -216,15 +217,15 @@ ruby {
 @media (max-width: 768px) {
   #term {
     font-size: 10vw;
-    bottom: 27.25vh;
+    bottom: 8.25vh;
   }
   #def {
     font-size: 20vw;
-    bottom: calc(1vh / 2);
+    bottom: 0vh;
   }
   #word_count {
     font-size: 4vw;
-    bottom: 2.25vw;
+    bottom: -2.25vw;
   }
 }
 

@@ -57,11 +57,8 @@ class Playtime {
     }
 }
 const playtime = new Playtime();
-window.addEventListener('DOMContentLoaded', function () {
-    loadingSection.style.display = 'block';
-    loading();
-});
 window.onload = () => __awaiter(void 0, void 0, void 0, function* () {
+    loading();
     loginSection.style.display = 'none';
     gameSection.style.display = 'none';
     statsSection.style.display = 'none';
@@ -87,6 +84,7 @@ window.onload = () => __awaiter(void 0, void 0, void 0, function* () {
         getWords(username);
     }
     else {
+        clearInterval(loadingInterval);
         loadingSection.style.display = 'none';
         loginSection.style.display = 'block';
     }
@@ -367,6 +365,7 @@ const login = () => {
 };
 const getWords = (username) => __awaiter(void 0, void 0, void 0, function* () {
     var _b;
+    loading();
     console.log('Getting words...');
     let params;
     let urlValue;
@@ -488,8 +487,32 @@ const newWord = (username, response) => __awaiter(void 0, void 0, void 0, functi
         updateFurigana();
         fixTextPosition();
     });
-    let termFontSize = 70;
-    let defFontSize = 120;
+    fixTextPosition();
+    typing(num, def, term, username, response, termFurigana, defFurigana);
+});
+const fixTextPosition = () => {
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    let termFontSize, defFontSize, termBottom, defBottom, wordCountBottom;
+    if (mediaQuery.matches) {
+        termFontSize = 10;
+        defFontSize = 20;
+        wordCountBottom = "2.25vw";
+    }
+    else {
+        termFontSize = 5;
+        defFontSize = 10;
+        wordCountBottom = "-6.75vw";
+    }
+    const isTermTextFits = () => termText.scrollHeight <= termText.clientHeight;
+    const isDefTextFits = () => defText.scrollHeight <= defText.clientHeight;
+    if (isTermTextFits()) {
+        termText.style.fontSize = `${termFontSize}vw`;
+    }
+    if (isDefTextFits()) {
+        defText.style.fontSize = `${defFontSize}vw`;
+    }
+    termFontSize = 70;
+    defFontSize = 120;
     while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
         defFontSize--;
         defText.style.fontSize = `${defFontSize}px`;
@@ -498,10 +521,6 @@ const newWord = (username, response) => __awaiter(void 0, void 0, void 0, functi
         termFontSize--;
         termText.style.fontSize = `${termFontSize}px`;
     }
-    fixTextPosition();
-    typing(num, def, term, username, response, termFurigana, defFurigana);
-});
-const fixTextPosition = () => {
     const defRect = defText.getBoundingClientRect();
     const termRect = termText.getBoundingClientRect();
     const distance = defRect.top - termRect.bottom;
@@ -509,7 +528,17 @@ const fixTextPosition = () => {
         termText.style.bottom = `${80 - distance}px`;
         console.log('Adjusting position!');
     }
-    wordCountText.style.bottom = `calc(${defText.style.bottom} - 30)px`;
+    const defStyles = window.getComputedStyle(defText);
+    wordCountText.style.bottom = `calc(${defStyles.getPropertyValue("bottom")} - 30)px`;
+};
+const checkAndSetStyle = (element, fontSize, bottom) => {
+    const containerHeight = element.parentNode.clientHeight;
+    const contentHeight = element.scrollHeight;
+    const newFontSize = (containerHeight / contentHeight) * fontSize;
+    if (newFontSize <= fontSize) {
+        element.style.fontSize = `${newFontSize}vw`;
+        element.style.bottom = bottom;
+    }
 };
 let composing = false;
 const typing = (num, def, term, username, response, termFurigana, defFurigana) => {
@@ -552,6 +581,9 @@ const typing = (num, def, term, username, response, termFurigana, defFurigana) =
                 let notYet = "<span style='color: #1fd755;' id='notYet'>" + defHtml.substring(num + inputLength) + "</span>";
                 num += inputLength;
                 if (num >= def.length) {
+                    // Remove input and compositionend event listeners
+                    typingInput.removeEventListener('input', onInput);
+                    typingInput.removeEventListener('compositionend', () => { });
                     const wordCount = parseInt((_b = (_a = wordCountText === null || wordCountText === void 0 ? void 0 : wordCountText.textContent) === null || _a === void 0 ? void 0 : _a.split(': ')[1]) !== null && _b !== void 0 ? _b : '0');
                     wordCountText.innerHTML = `Words: ${wordCount + 1}`;
                     let randomIndex = termText.getAttribute('data-random-index');
@@ -612,25 +644,32 @@ const submitTyped = (def, term, randomIndex, username, response) => {
 const getHistory = (username, response) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(username);
     username = username.trim();
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', `/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
-    xhr.onload = function () {
-        if (xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            console.log(response);
-            displayHistory(response);
-        }
-        else {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `/get/history?username=${username}&quizlet_id=${response.quizlet_id}`);
+        xhr.onload = function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    console.log(response);
+                    yield displayHistory(response);
+                    resolve(response);
+                }
+                else {
+                    console.error(xhr.statusText);
+                    console.error('Request failed.');
+                    reject(xhr.statusText);
+                }
+            });
+        };
+        xhr.onerror = function () {
             console.error(xhr.statusText);
             console.error('Request failed.');
-        }
-    };
-    xhr.onerror = function () {
-        console.error(xhr.statusText);
-        console.error('Request failed.');
-    };
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send();
+            reject(xhr.statusText);
+        };
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send();
+    });
 });
 const displayHistory = (response) => {
     const history = response.history;
@@ -654,7 +693,7 @@ const displayHistory = (response) => {
         });
         promises.push(Promise.all([termPromise, defPromise]));
     }
-    Promise.all(promises).then((results) => {
+    return Promise.all(promises).then((results) => {
         for (let i = 0; i < results.length; i++) {
             const termWithFurigana = results[i][0];
             const defWithFurigana = results[i][1];

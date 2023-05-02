@@ -92,15 +92,12 @@ var Playtime = /** @class */ (function () {
     return Playtime;
 }());
 var playtime = new Playtime();
-window.addEventListener('DOMContentLoaded', function () {
-    loadingSection.style.display = 'block';
-    loading();
-});
 window.onload = function () { return __awaiter(_this, void 0, void 0, function () {
     var furiganaStatus, username;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                loading();
                 loginSection.style.display = 'none';
                 gameSection.style.display = 'none';
                 statsSection.style.display = 'none';
@@ -128,6 +125,7 @@ window.onload = function () { return __awaiter(_this, void 0, void 0, function (
                     getWords(username);
                 }
                 else {
+                    clearInterval(loadingInterval);
                     loadingSection.style.display = 'none';
                     loginSection.style.display = 'block';
                 }
@@ -431,6 +429,7 @@ var getWords = function (username) { return __awaiter(_this, void 0, void 0, fun
     var params, urlValue, quizlet_id, dropdown, selectedOption, quizletMath, CACHE_DURATION, cachedDataString, cachedData, cacheAge, xhr;
     var _a;
     return __generator(this, function (_b) {
+        loading();
         console.log('Getting words...');
         dropdown = document.getElementById('dropdown-menu');
         if (dropdown) {
@@ -510,7 +509,7 @@ var getWords = function (username) { return __awaiter(_this, void 0, void 0, fun
 var randomIndex = 0;
 var lastIndex = 0;
 var newWord = function (username, response) { return __awaiter(_this, void 0, void 0, function () {
-    var num, termLength, defLength, maxIndex, term, def, termFurigana, defFurigana, termFontSize, defFontSize;
+    var num, termLength, defLength, maxIndex, term, def, termFurigana, defFurigana;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -557,16 +556,6 @@ var newWord = function (username, response) { return __awaiter(_this, void 0, vo
                     })];
             case 2:
                 _a.sent();
-                termFontSize = 70;
-                defFontSize = 120;
-                while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
-                    defFontSize--;
-                    defText.style.fontSize = defFontSize + "px";
-                }
-                while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
-                    termFontSize--;
-                    termText.style.fontSize = termFontSize + "px";
-                }
                 fixTextPosition();
                 typing(num, def, term, username, response, termFurigana, defFurigana);
                 return [2 /*return*/];
@@ -574,6 +563,36 @@ var newWord = function (username, response) { return __awaiter(_this, void 0, vo
     });
 }); };
 var fixTextPosition = function () {
+    var mediaQuery = window.matchMedia("(max-width: 768px)");
+    var termFontSize, defFontSize, termBottom, defBottom, wordCountBottom;
+    if (mediaQuery.matches) {
+        termFontSize = 10;
+        defFontSize = 20;
+        wordCountBottom = "2.25vw";
+    }
+    else {
+        termFontSize = 5;
+        defFontSize = 10;
+        wordCountBottom = "-6.75vw";
+    }
+    var isTermTextFits = function () { return termText.scrollHeight <= termText.clientHeight; };
+    var isDefTextFits = function () { return defText.scrollHeight <= defText.clientHeight; };
+    if (isTermTextFits()) {
+        termText.style.fontSize = termFontSize + "vw";
+    }
+    if (isDefTextFits()) {
+        defText.style.fontSize = defFontSize + "vw";
+    }
+    termFontSize = 70;
+    defFontSize = 120;
+    while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+        defFontSize--;
+        defText.style.fontSize = defFontSize + "px";
+    }
+    while ((termText.scrollWidth > termText.offsetWidth || termText.scrollHeight > termText.offsetHeight)) {
+        termFontSize--;
+        termText.style.fontSize = termFontSize + "px";
+    }
     var defRect = defText.getBoundingClientRect();
     var termRect = termText.getBoundingClientRect();
     var distance = defRect.top - termRect.bottom;
@@ -581,7 +600,17 @@ var fixTextPosition = function () {
         termText.style.bottom = 80 - distance + "px";
         console.log('Adjusting position!');
     }
-    wordCountText.style.bottom = "calc(" + defText.style.bottom + " - 30)px";
+    // const defStyles = window.getComputedStyle(defText);
+    // wordCountText.style.bottom = `calc(${window.getComputedStyle(defText).getPropertyValue("bottom") } - 30)px`;
+};
+var checkAndSetStyle = function (element, fontSize, bottom) {
+    var containerHeight = element.parentNode.clientHeight;
+    var contentHeight = element.scrollHeight;
+    var newFontSize = (containerHeight / contentHeight) * fontSize;
+    if (newFontSize <= fontSize) {
+        element.style.fontSize = newFontSize + "vw";
+        element.style.bottom = bottom;
+    }
 };
 var composing = false;
 var typing = function (num, def, term, username, response, termFurigana, defFurigana) {
@@ -624,6 +653,9 @@ var typing = function (num, def, term, username, response, termFurigana, defFuri
                 var notYet = "<span style='color: #1fd755;' id='notYet'>" + defHtml.substring(num + inputLength) + "</span>";
                 num += inputLength;
                 if (num >= def.length) {
+                    // Remove input and compositionend event listeners
+                    typingInput.removeEventListener('input', onInput);
+                    typingInput.removeEventListener('compositionend', function () { });
                     var wordCount = parseInt((_b = (_a = wordCountText === null || wordCountText === void 0 ? void 0 : wordCountText.textContent) === null || _a === void 0 ? void 0 : _a.split(': ')[1]) !== null && _b !== void 0 ? _b : '0');
                     wordCountText.innerHTML = "Words: " + (wordCount + 1);
                     var randomIndex_1 = termText.getAttribute('data-random-index');
@@ -682,30 +714,44 @@ var submitTyped = function (def, term, randomIndex, username, response) {
     xhr.send(JSON.stringify(data));
 };
 var getHistory = function (username, response) { return __awaiter(_this, void 0, void 0, function () {
-    var xhr;
     return __generator(this, function (_a) {
         console.log(username);
         username = username.trim();
-        xhr = new XMLHttpRequest();
-        xhr.open('GET', "/get/history?username=" + username + "&quizlet_id=" + response.quizlet_id);
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                var response_2 = JSON.parse(xhr.responseText);
-                console.log(response_2);
-                displayHistory(response_2);
-            }
-            else {
-                console.error(xhr.statusText);
-                console.error('Request failed.');
-            }
-        };
-        xhr.onerror = function () {
-            console.error(xhr.statusText);
-            console.error('Request failed.');
-        };
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.send();
-        return [2 /*return*/];
+        return [2 /*return*/, new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', "/get/history?username=" + username + "&quizlet_id=" + response.quizlet_id);
+                xhr.onload = function () {
+                    return __awaiter(this, void 0, void 0, function () {
+                        var response_2;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    if (!(xhr.status === 200)) return [3 /*break*/, 2];
+                                    response_2 = JSON.parse(xhr.responseText);
+                                    console.log(response_2);
+                                    return [4 /*yield*/, displayHistory(response_2)];
+                                case 1:
+                                    _a.sent();
+                                    resolve(response_2);
+                                    return [3 /*break*/, 3];
+                                case 2:
+                                    console.error(xhr.statusText);
+                                    console.error('Request failed.');
+                                    reject(xhr.statusText);
+                                    _a.label = 3;
+                                case 3: return [2 /*return*/];
+                            }
+                        });
+                    });
+                };
+                xhr.onerror = function () {
+                    console.error(xhr.statusText);
+                    console.error('Request failed.');
+                    reject(xhr.statusText);
+                };
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.send();
+            })];
     });
 }); };
 var displayHistory = function (response) {
@@ -733,7 +779,7 @@ var displayHistory = function (response) {
     for (var i = 0; i < history.length; i++) {
         _loop_1(i);
     }
-    Promise.all(promises).then(function (results) {
+    return Promise.all(promises).then(function (results) {
         for (var i = 0; i < results.length; i++) {
             var termWithFurigana = results[i][0];
             var defWithFurigana = results[i][1];
