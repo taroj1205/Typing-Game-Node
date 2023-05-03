@@ -528,8 +528,8 @@ const fixTextPosition = () => {
         termText.style.bottom = `${80 - distance}px`;
         console.log('Adjusting position!');
     }
-    const defStyles = window.getComputedStyle(defText);
-    wordCountText.style.bottom = `calc(${defStyles.getPropertyValue("bottom")} - 30)px`;
+    // const defStyles = window.getComputedStyle(defText);
+    // wordCountText.style.bottom = `calc(${window.getComputedStyle(defText).getPropertyValue("bottom") } - 30)px`;
 };
 const checkAndSetStyle = (element, fontSize, bottom) => {
     const containerHeight = element.parentNode.clientHeight;

@@ -709,7 +709,7 @@ app.get('/leaderboard', function (req, res) { return __awaiter(void 0, void 0, v
     });
 }); });
 app.get('/profile', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var username, result, count_per_day, labelsLine, dataLine, labels, data, minValue_1, maxValue_1, gradient_1, colors, background, playtimeMS, playtime_1, templatePath, templateSource, template, html, err_4, html;
+    var username, result, count_per_day, labelsLine, dataLine, labels, data, minValue_1, maxValue_1, gradient_1, colors, background, playtimeMS, playtime_1, templatePath, templateSource, template, html, err_4, errorInfo, templatePath, templateSource, template, html;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -717,7 +717,7 @@ app.get('/profile', function (req, res) { return __awaiter(void 0, void 0, void 
                 checkAndCreateDir();
                 _a.label = 1;
             case 1:
-                _a.trys.push([1, 8, , 9]);
+                _a.trys.push([1, 7, , 8]);
                 return [4 /*yield*/, getDataProfile(username)];
             case 2:
                 result = _a.sent();
@@ -774,19 +774,24 @@ app.get('/profile', function (req, res) { return __awaiter(void 0, void 0, void 
                 res.header('Content-Type', 'text/html');
                 res.send(html);
                 _a.label = 6;
-            case 6: return [4 /*yield*/, logMessage('Sending Profile Page...', 'info')];
+            case 6:
+                logMessage('Sending Profile Page...', 'info');
+                return [3 /*break*/, 8];
             case 7:
-                _a.sent();
-                return [3 /*break*/, 9];
-            case 8:
                 err_4 = _a.sent();
                 console.log(err_4.message);
-                html = "<!DOCTYPE html><html><head><title>Profile - " + username + "</title><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0\"><link rel=\"icon\" type=\"image/x-icon\" href=\"/image/facicon/favicon.ico\" /><link rel=\"stylesheet\" type=\"text/css\" href=\"/css/profile/style.css\" /></head><body>";
-                html += "<h1>" + username + "'s profile</h1>";
-                html += "<p>" + username + " has not typed any words yet.</p>";
+                errorInfo = err_4.toString();
+                logMessage(errorInfo, 'error');
+                templatePath = path.join(path.join(__dirname, 'public', 'html', 'profile', 'index.html'));
+                templateSource = fs.readFileSync(templatePath, 'utf8');
+                template = handlebars.compile(templateSource);
+                html = template({
+                    username: username
+                });
+                res.header('Content-Type', 'text/html');
                 res.send(html);
-                return [3 /*break*/, 9];
-            case 9: return [2 /*return*/];
+                return [3 /*break*/, 8];
+            case 8: return [2 /*return*/];
         }
     });
 }); });

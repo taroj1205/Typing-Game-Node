@@ -742,12 +742,18 @@ app.get('/profile', async (req, res) => {
 			res.header('Content-Type', 'text/html');
 			res.send(html);
 		}
-		await logMessage('Sending Profile Page...', 'info');
+		logMessage('Sending Profile Page...', 'info');
 	} catch (err: any) {
 		console.log(err.message);
-		let html = `<!DOCTYPE html><html><head><title>Profile - ${username}</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"><link rel="icon" type="image/x-icon" href="/image/facicon/favicon.ico" /><link rel="stylesheet" type="text/css" href="/css/profile/style.css" /></head><body>`;
-		html += `<h1>${username}'s profile</h1>`;
-		html += `<p>${username} has not typed any words yet.</p>`;
+		let errorInfo: string = err.toString();
+		logMessage(errorInfo, 'error');
+		const templatePath = path.join(path.join(__dirname, 'public', 'html', 'profile', 'index.html'))
+		const templateSource = fs.readFileSync(templatePath, 'utf8');
+		const template = handlebars.compile(templateSource);
+		const html = template({
+			username
+		});
+		res.header('Content-Type', 'text/html');
 		res.send(html);
 	}
 });
