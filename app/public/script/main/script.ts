@@ -488,6 +488,7 @@ interface QuizletResponse {
 
 const newWord = async (username: string, response: QuizletResponse) => {
 	typingInput.value = '';
+	typingInput.style.display = 'block';
 	let num = 0;
 	const termLength = response.term.length;
 	const defLength = response.def.length;

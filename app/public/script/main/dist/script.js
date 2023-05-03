@@ -512,6 +512,7 @@ var newWord = function (username, response) { return __awaiter(_this, void 0, vo
     var num, termLength, defLength, maxIndex, term, def, mediaQuery, termFontSize, defFontSize, wordCountBottom, MIN_FONT_SIZE, isTextFits, getTextWidth, fitText;
     return __generator(this, function (_a) {
         typingInput.value = '';
+        typingInput.style.display = 'block';
         num = 0;
         termLength = response.term.length;
         defLength = response.def.length;
