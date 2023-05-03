@@ -514,37 +514,9 @@ const newWord = async (username: string, response: QuizletResponse) => {
 		randomIndex++;
 	}
 
-	termText.textContent = term;
-	defText.textContent = def;
-
-	// Add the hidden notes to termText and defText
-	termText.setAttribute('data-random-index', String(randomIndex));
-	defText.setAttribute('data-random-index', String(randomIndex));
-	titleHTML.textContent = 'タイピングゲーム風単語学習 - ' + response.quizlet_title;
-	typingInput.focus();
-
-	let termFurigana;
-	let defFurigana;
-	await furigana(term, (termFurigana: string | undefined) => {
-		termText.innerHTML = termFurigana || termText.innerHTML;
-		updateFurigana();
-	});
-
-	await furigana(def, (defFurigana: string | undefined) => {
-		defText.innerHTML = defFurigana || defText.innerHTML;
-		updateFurigana();
-		fixTextPosition();
-	});
-
-	fixTextPosition();
-
-	typing(num, def, term, username, response, termFurigana, defFurigana);
-}
-
-const fixTextPosition = () => {
 	const mediaQuery = window.matchMedia("(max-width: 768px)");
 
-	let termFontSize, defFontSize, termBottom, defBottom, wordCountBottom;
+	let termFontSize, defFontSize, wordCountBottom;
 
 	if (mediaQuery.matches) {
 		termFontSize = 10;
@@ -556,21 +528,53 @@ const fixTextPosition = () => {
 		wordCountBottom = "-6.75vw";
 	}
 
-	const isTermTextFits = () => termText.scrollHeight <= termText.clientHeight;
-	const isDefTextFits = () => defText.scrollHeight <= defText.clientHeight;
+	const MIN_FONT_SIZE = 0.5;
 
-	if (isTermTextFits()) {
-		termText.style.fontSize = `${termFontSize}vw`;
-	}
+	const isTextFits = (text: string, fontSize: number) => {
+		const textWidth = getTextWidth(text, fontSize);
+		const pageWidth = window.innerWidth;
+		return textWidth <= pageWidth;
+	};
 
-	if (isDefTextFits()) {
-		defText.style.fontSize = `${defFontSize}vw`;
-	}
+	const getTextWidth = (text: string, fontSize: number) => {
+		const canvas = document.createElement('canvas');
+		const context = canvas.getContext('2d');
+		if (!context) { return 0; };
+		context.font = `${fontSize}vw sans-serif`;
+		return context.measureText(text).width;
+	};
 
-	termFontSize = 70;
-	defFontSize = 120;
+	const fitText = (text: string, textElement: HTMLElement, fontSize: number) => {
+		while (!isTextFits(text, fontSize) && fontSize > MIN_FONT_SIZE) {
+			fontSize -= 0.5;
+			textElement.style.fontSize = `${fontSize}vw`;
+		}
+		textElement.style.fontSize = `${fontSize}vw`;
+		textElement.textContent = text;
+		furigana(text, (furigana: string | undefined) => {
+			textElement.innerHTML = furigana || textElement.innerHTML;
+			updateFurigana();
+			fixTextPosition();
+		});
+	};
 
-		while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
+	fitText(term, termText, termFontSize);
+	fitText(def, defText, defFontSize);
+
+	// Add the hidden notes to termText and defText
+	termText.setAttribute('data-random-index', String(randomIndex));
+	defText.setAttribute('data-random-index', String(randomIndex));
+	titleHTML.textContent = 'タイピングゲーム風単語学習 - ' + response.quizlet_title;
+	typingInput.focus();
+
+	typing(num, def, term, username, response);
+}
+
+const fixTextPosition = () => {
+	let termFontSize = 70;
+	let defFontSize = 120;
+
+	while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
 		defFontSize--;
 		defText.style.fontSize = `${defFontSize}px`;
 	}
@@ -612,15 +616,9 @@ const typing = (
 	term: string,
 	username: string,
 	response: QuizletResponse,
-	termFurigana: string | undefined,
-	defFurigana: string | undefined
 ) => {
 	console.log('def: ' + def);
 	composing = false;
-
-	const defHtml = defFurigana
-		? `<ruby>${def}<rp>(</rp><rt>${defFurigana}</rt><rp>)</rp></ruby>`
-		: def;
 
 	const onInput = (event: InputEvent) => {
 		if (composing) return; // return early if composing
@@ -628,19 +626,13 @@ const typing = (
 		const inputText = event.data;
 		const inputLength = inputText ? inputText.length : 0;
 
-		if (event.inputType === 'deleteContentBackward') {
-			if (num <= 0) {
-			} else {
-				if (num > 0) {
-					num -= 1;
-					let typedOut = "<span style='color: grey;' id='typedOut'>" + defHtml.substring(0, num) + "</span>";
-					let notYet = "<span style='color: #e06c75;' id='notYet'>" + defHtml.substring(num) + "</span>";
-					document.querySelector("#def")!.innerHTML = typedOut + notYet;
-				} else {
-					return;
-				}
-			}
-		} else {
+		if (event.inputType === 'deleteContentBackward' && num > 0) {
+			num -= 1;
+			let typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
+			let notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
+			document.querySelector("#def")!.innerHTML = typedOut + notYet;
+			console.log("deleted!")
+		} else if (event.inputType !== 'deleteContentBackward') {
 			let correct = true;
 			for (let i = 0; i < inputLength; i++) {
 				if (def[num + i] !== inputText?.[i]) {
@@ -649,8 +641,8 @@ const typing = (
 				}
 			}
 			if (correct) {
-				let typedOut = "<span style='color: grey;' id='typedOut'>" + defHtml.substring(0, num + inputLength) + "</span>";
-				let notYet = "<span style='color: #1fd755;' id='notYet'>" + defHtml.substring(num + inputLength) + "</span>";
+				let typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num + inputLength) + "</span>";
+				let notYet = "<span style='color: #1fd755;' id='notYet'>" + def.substring(num + inputLength) + "</span>";
 				num += inputLength;
 				if (num >= def.length) {
 					// Remove input and compositionend event listeners
@@ -666,8 +658,8 @@ const typing = (
 					document.querySelector("#def")!.innerHTML = typedOut + notYet;
 				}
 			} else {
-				let typedOut = "<span style='color: grey;' id='typedOut'>" + defHtml.substring(0, num) + "</span>";
-				let notYet = "<span style='color: #e06c75;' id='notYet'>" + defHtml.substring(num) + "</span>";
+				let typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
+				let notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
 				document.querySelector("#def")!.innerHTML = typedOut + notYet;
 			}
 		}

@@ -509,82 +509,85 @@ var getWords = function (username) { return __awaiter(_this, void 0, void 0, fun
 var randomIndex = 0;
 var lastIndex = 0;
 var newWord = function (username, response) { return __awaiter(_this, void 0, void 0, function () {
-    var num, termLength, defLength, maxIndex, term, def, termFurigana, defFurigana;
+    var num, termLength, defLength, maxIndex, term, def, mediaQuery, termFontSize, defFontSize, wordCountBottom, MIN_FONT_SIZE, isTextFits, getTextWidth, fitText;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                typingInput.value = '';
-                num = 0;
-                termLength = response.term.length;
-                defLength = response.def.length;
-                maxIndex = Math.max(termLength, defLength) - 1;
-                if (maxIndex < 10 || termLength === 1) {
-                    randomIndex++;
-                    if (randomIndex > maxIndex) {
-                        randomIndex = 0;
-                    }
-                }
-                else {
-                    while (randomIndex === lastIndex) {
-                        randomIndex = Math.floor(Math.random() * (maxIndex + 1));
-                    }
-                    lastIndex = randomIndex;
-                }
-                console.log('randomIndex: ' + randomIndex);
-                term = response.term[randomIndex];
-                def = response.def[randomIndex];
-                if (randomIndex === 0) {
-                    randomIndex++;
-                }
-                termText.textContent = term;
-                defText.textContent = def;
-                // Add the hidden notes to termText and defText
-                termText.setAttribute('data-random-index', String(randomIndex));
-                defText.setAttribute('data-random-index', String(randomIndex));
-                titleHTML.textContent = 'タイピングゲーム風単語学習 - ' + response.quizlet_title;
-                typingInput.focus();
-                return [4 /*yield*/, furigana(term, function (termFurigana) {
-                        termText.innerHTML = termFurigana || termText.innerHTML;
-                        updateFurigana();
-                    })];
-            case 1:
-                _a.sent();
-                return [4 /*yield*/, furigana(def, function (defFurigana) {
-                        defText.innerHTML = defFurigana || defText.innerHTML;
-                        updateFurigana();
-                        fixTextPosition();
-                    })];
-            case 2:
-                _a.sent();
-                fixTextPosition();
-                typing(num, def, term, username, response, termFurigana, defFurigana);
-                return [2 /*return*/];
+        typingInput.value = '';
+        num = 0;
+        termLength = response.term.length;
+        defLength = response.def.length;
+        maxIndex = Math.max(termLength, defLength) - 1;
+        if (maxIndex < 10 || termLength === 1) {
+            randomIndex++;
+            if (randomIndex > maxIndex) {
+                randomIndex = 0;
+            }
         }
+        else {
+            while (randomIndex === lastIndex) {
+                randomIndex = Math.floor(Math.random() * (maxIndex + 1));
+            }
+            lastIndex = randomIndex;
+        }
+        console.log('randomIndex: ' + randomIndex);
+        term = response.term[randomIndex];
+        def = response.def[randomIndex];
+        if (randomIndex === 0) {
+            randomIndex++;
+        }
+        mediaQuery = window.matchMedia("(max-width: 768px)");
+        if (mediaQuery.matches) {
+            termFontSize = 10;
+            defFontSize = 20;
+            wordCountBottom = "2.25vw";
+        }
+        else {
+            termFontSize = 5;
+            defFontSize = 10;
+            wordCountBottom = "-6.75vw";
+        }
+        MIN_FONT_SIZE = 0.5;
+        isTextFits = function (text, fontSize) {
+            var textWidth = getTextWidth(text, fontSize);
+            var pageWidth = window.innerWidth;
+            return textWidth <= pageWidth;
+        };
+        getTextWidth = function (text, fontSize) {
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            if (!context) {
+                return 0;
+            }
+            ;
+            context.font = fontSize + "vw sans-serif";
+            return context.measureText(text).width;
+        };
+        fitText = function (text, textElement, fontSize) {
+            while (!isTextFits(text, fontSize) && fontSize > MIN_FONT_SIZE) {
+                fontSize -= 0.5;
+                textElement.style.fontSize = fontSize + "vw";
+            }
+            textElement.style.fontSize = fontSize + "vw";
+            textElement.textContent = text;
+            furigana(text, function (furigana) {
+                textElement.innerHTML = furigana || textElement.innerHTML;
+                updateFurigana();
+                fixTextPosition();
+            });
+        };
+        fitText(term, termText, termFontSize);
+        fitText(def, defText, defFontSize);
+        // Add the hidden notes to termText and defText
+        termText.setAttribute('data-random-index', String(randomIndex));
+        defText.setAttribute('data-random-index', String(randomIndex));
+        titleHTML.textContent = 'タイピングゲーム風単語学習 - ' + response.quizlet_title;
+        typingInput.focus();
+        typing(num, def, term, username, response);
+        return [2 /*return*/];
     });
 }); };
 var fixTextPosition = function () {
-    var mediaQuery = window.matchMedia("(max-width: 768px)");
-    var termFontSize, defFontSize, termBottom, defBottom, wordCountBottom;
-    if (mediaQuery.matches) {
-        termFontSize = 10;
-        defFontSize = 20;
-        wordCountBottom = "2.25vw";
-    }
-    else {
-        termFontSize = 5;
-        defFontSize = 10;
-        wordCountBottom = "-6.75vw";
-    }
-    var isTermTextFits = function () { return termText.scrollHeight <= termText.clientHeight; };
-    var isDefTextFits = function () { return defText.scrollHeight <= defText.clientHeight; };
-    if (isTermTextFits()) {
-        termText.style.fontSize = termFontSize + "vw";
-    }
-    if (isDefTextFits()) {
-        defText.style.fontSize = defFontSize + "vw";
-    }
-    termFontSize = 70;
-    defFontSize = 120;
+    var termFontSize = 70;
+    var defFontSize = 120;
     while ((defText.scrollWidth > defText.offsetWidth || defText.scrollHeight > defText.offsetHeight)) {
         defFontSize--;
         defText.style.fontSize = defFontSize + "px";
@@ -613,34 +616,23 @@ var checkAndSetStyle = function (element, fontSize, bottom) {
     }
 };
 var composing = false;
-var typing = function (num, def, term, username, response, termFurigana, defFurigana) {
+var typing = function (num, def, term, username, response) {
     console.log('def: ' + def);
     composing = false;
-    var defHtml = defFurigana
-        ? "<ruby>" + def + "<rp>(</rp><rt>" + defFurigana + "</rt><rp>)</rp></ruby>"
-        : def;
     var onInput = function (event) {
         var _a, _b;
         if (composing)
             return; // return early if composing
         var inputText = event.data;
         var inputLength = inputText ? inputText.length : 0;
-        if (event.inputType === 'deleteContentBackward') {
-            if (num <= 0) {
-            }
-            else {
-                if (num > 0) {
-                    num -= 1;
-                    var typedOut = "<span style='color: grey;' id='typedOut'>" + defHtml.substring(0, num) + "</span>";
-                    var notYet = "<span style='color: #e06c75;' id='notYet'>" + defHtml.substring(num) + "</span>";
-                    document.querySelector("#def").innerHTML = typedOut + notYet;
-                }
-                else {
-                    return;
-                }
-            }
+        if (event.inputType === 'deleteContentBackward' && num > 0) {
+            num -= 1;
+            var typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
+            var notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
+            document.querySelector("#def").innerHTML = typedOut + notYet;
+            console.log("deleted!");
         }
-        else {
+        else if (event.inputType !== 'deleteContentBackward') {
             var correct = true;
             for (var i = 0; i < inputLength; i++) {
                 if (def[num + i] !== (inputText === null || inputText === void 0 ? void 0 : inputText[i])) {
@@ -649,8 +641,8 @@ var typing = function (num, def, term, username, response, termFurigana, defFuri
                 }
             }
             if (correct) {
-                var typedOut = "<span style='color: grey;' id='typedOut'>" + defHtml.substring(0, num + inputLength) + "</span>";
-                var notYet = "<span style='color: #1fd755;' id='notYet'>" + defHtml.substring(num + inputLength) + "</span>";
+                var typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num + inputLength) + "</span>";
+                var notYet = "<span style='color: #1fd755;' id='notYet'>" + def.substring(num + inputLength) + "</span>";
                 num += inputLength;
                 if (num >= def.length) {
                     // Remove input and compositionend event listeners
@@ -668,8 +660,8 @@ var typing = function (num, def, term, username, response, termFurigana, defFuri
                 }
             }
             else {
-                var typedOut = "<span style='color: grey;' id='typedOut'>" + defHtml.substring(0, num) + "</span>";
-                var notYet = "<span style='color: #e06c75;' id='notYet'>" + defHtml.substring(num) + "</span>";
+                var typedOut = "<span style='color: grey;' id='typedOut'>" + def.substring(0, num) + "</span>";
+                var notYet = "<span style='color: #e06c75;' id='notYet'>" + def.substring(num) + "</span>";
                 document.querySelector("#def").innerHTML = typedOut + notYet;
             }
         }
