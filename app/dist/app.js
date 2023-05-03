@@ -1176,6 +1176,9 @@ var logMessage = function (message, level) { return __awaiter(void 0, void 0, vo
     });
 }); };
 checkAndCreateDir();
+app.get('*', function (req, res) {
+    res.status(404).sendFile(path.join(__dirname, '/public/html/error/404.html'));
+});
 app.listen(port, address, function () {
     console.log("Server listening on http://" + address + ":" + port);
 });

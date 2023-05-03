@@ -1140,6 +1140,10 @@ const logMessage = async (message: string, level: string) => {
 
 checkAndCreateDir();
 
+app.get('*', function (req, res) {
+	res.status(404).sendFile(path.join(__dirname, '/public/html/error/404.html'));
+});
+
 app.listen(port, address, () => {
 	console.log(`Server listening on http://${address}:${port}`);
 });

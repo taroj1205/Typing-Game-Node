@@ -987,6 +987,9 @@ const logMessage = (message, level) => __awaiter(void 0, void 0, void 0, functio
     logger.log(level, message, meta, currentDateLogsDir);
 });
 checkAndCreateDir();
+app.get('*', function (req, res) {
+    res.status(404).sendFile(path.join(__dirname, '/public/html/error/404.html'));
+});
 app.listen(port, address, () => {
     console.log(`Server listening on http://${address}:${port}`);
 });

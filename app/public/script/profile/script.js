@@ -1,27 +1,45 @@
 "use strict";
-const searchContainer = document.getElementById('search-container');
-const searchButton = document.getElementById('search-button');
-function showSearch() {
-    if (searchContainer !== null) {
-        searchContainer.style.display = 'block';
+const searchButton = document.createElement('button');
+searchButton.id = 'search-button';
+searchButton.textContent = 'Search';
+const searchContainer = document.createElement('div');
+searchContainer.id = 'search-container';
+const searchInput = document.createElement('input');
+searchInput.type = 'text';
+searchInput.id = 'search-input';
+searchInput.addEventListener('keydown', (event) => {
+    if (event.key === "Enter") {
+        performSearch();
     }
+});
+const goButton = document.createElement('button');
+goButton.textContent = 'Go';
+goButton.addEventListener('click', performSearch);
+const closeButton = document.createElement('button');
+closeButton.textContent = 'Close';
+closeButton.addEventListener('click', hideSearch);
+searchContainer.appendChild(searchInput);
+searchContainer.appendChild(goButton);
+searchContainer.appendChild(closeButton);
+function showSearch() {
+    searchContainer.style.display = 'block';
+    searchInput.focus(); // Set focus to input element when search container is shown
 }
 function hideSearch() {
-    if (searchContainer) {
-        searchContainer.style.display = 'none';
-    }
+    searchContainer.style.display = 'none';
 }
 function performSearch() {
-    var _a;
-    const searchTerm = (_a = document.getElementById('search-input')) === null || _a === void 0 ? void 0 : _a.value;
+    const searchTerm = searchInput.value;
     const searchUrl = `/profile?user=${searchTerm}`;
     globalThis.location.href = searchUrl;
 }
-searchButton === null || searchButton === void 0 ? void 0 : searchButton.addEventListener('click', () => {
-    if (searchContainer && searchContainer.style.display === 'block') {
+searchButton.addEventListener('click', () => {
+    if (searchContainer.style.display === 'block') {
         hideSearch();
     }
     else {
         showSearch();
     }
 });
+document.body.appendChild(searchButton);
+document.body.appendChild(searchContainer);
