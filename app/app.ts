@@ -283,7 +283,23 @@ app.post('/login', async (req, res) => {
 });
 
 app.get('/account', (req, res) => {
-	res.sendFile(__dirname + '/public/html/account/password.html');
+	// Read the HTML file
+	fs.readFile(__dirname + '/public/html/account/index.html', 'utf8', (err: any, data: any) => {
+		if (err) {
+			console.error(err);
+			res.status(500).send('Internal server error');
+			return;
+		}
+
+		// Compile the Handlebars template
+		const template = handlebars.compile(data);
+
+		// Render the template with the username
+		const html = template({ username: req.query.user });
+
+		// Send the modified HTML file
+		res.send(html);
+	});
 });
 
 app.post('/change-password', (req, res) => {
@@ -298,7 +314,9 @@ app.post('/change-password', (req, res) => {
 
 		bcrypt.compare(currentPassword, row.password, (err: any, result: any) => {
 			if (err || !result) {
-				res.json({ success: false, error: 'Invalid current password' });
+				setTimeout(() => {
+					res.json({ success: false, error: 'Invalid current password' });
+				}, 5000); // Delay execution by 5 seconds (5000 milliseconds)
 				return;
 			}
 

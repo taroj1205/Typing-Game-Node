@@ -66,6 +66,7 @@ var setting_username = document.getElementById("setting_username");
 var logoutButton = document.getElementById("logout");
 var loadingSection = document.getElementById("loading");
 var loadingText = loadingSection.querySelector('p');
+var accountLink = document.getElementById('account-link');
 var loadingInterval;
 var Playtime = /** @class */ (function () {
     function Playtime() {
@@ -457,6 +458,8 @@ var getWords = function (username) { return __awaiter(_this, void 0, void 0, fun
         localStorage.setItem('quizlet', quizlet_id);
         console.log(params);
         setting_username.textContent = username;
+        accountLink.href = "/account?user=" + username;
+        accountLink.target = '_blank';
         CACHE_DURATION = 30 * 60 * 1000;
         cachedDataString = localStorage.getItem("quizletData");
         cachedData = cachedDataString ? JSON.parse(cachedDataString) : null;
@@ -1076,11 +1079,13 @@ var sendPlaytime = function (username) {
             playtime.reset();
             playtime.start();
             console.log(response);
+            return;
         }
         else {
             console.error(xhr.statusText);
             console.error('Request failed.');
             playtime.start();
+            return;
         }
     };
     xhr.onerror = function () {

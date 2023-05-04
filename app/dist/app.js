@@ -316,7 +316,20 @@ app.post('/login', function (req, res) { return __awaiter(void 0, void 0, void 0
     });
 }); });
 app.get('/account', function (req, res) {
-    res.sendFile(__dirname + '/public/html/account/password.html');
+    // Read the HTML file
+    fs.readFile(__dirname + '/public/html/account/index.html', 'utf8', function (err, data) {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Internal server error');
+            return;
+        }
+        // Compile the Handlebars template
+        var template = handlebars.compile(data);
+        // Render the template with the username
+        var html = template({ username: req.query.user });
+        // Send the modified HTML file
+        res.send(html);
+    });
 });
 app.post('/change-password', function (req, res) {
     var _a = req.body, username = _a.username, currentPassword = _a.currentPassword, newPassword = _a.newPassword;
@@ -328,7 +341,9 @@ app.post('/change-password', function (req, res) {
         }
         bcrypt.compare(currentPassword, row.password, function (err, result) {
             if (err || !result) {
-                res.json({ success: false, error: 'Invalid current password' });
+                setTimeout(function () {
+                    res.json({ success: false, error: 'Invalid current password' });
+                }, 5000); // Delay execution by 5 seconds (5000 milliseconds)
                 return;
             }
             bcrypt.hash(newPassword, 10, function (err, hash) {

@@ -256,7 +256,20 @@ app.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 }));
 app.get('/account', (req, res) => {
-    res.sendFile(__dirname + '/public/html/account/password.html');
+    // Read the HTML file
+    fs.readFile(__dirname + '/public/html/account/index.html', 'utf8', (err, data) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Internal server error');
+            return;
+        }
+        // Compile the Handlebars template
+        const template = handlebars.compile(data);
+        // Render the template with the username
+        const html = template({ username: req.query.user });
+        // Send the modified HTML file
+        res.send(html);
+    });
 });
 app.post('/change-password', (req, res) => {
     const { username, currentPassword, newPassword } = req.body;
@@ -268,7 +281,9 @@ app.post('/change-password', (req, res) => {
         }
         bcrypt.compare(currentPassword, row.password, (err, result) => {
             if (err || !result) {
-                res.json({ success: false, error: 'Invalid current password' });
+                setTimeout(() => {
+                    res.json({ success: false, error: 'Invalid current password' });
+                }, 5000); // Delay execution by 5 seconds (5000 milliseconds)
                 return;
             }
             bcrypt.hash(newPassword, 10, (err, hash) => {

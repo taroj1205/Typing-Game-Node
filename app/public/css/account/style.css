@@ -42,7 +42,7 @@ input[type="password"] {
   box-sizing: border-box;
 }
 
-button[type="button"] {
+button[type="submit"] {
   display: block;
   margin: 30px auto 0;
   padding: 10px;
@@ -52,21 +52,21 @@ button[type="button"] {
   font-size: 18px;
 }
 
-button[type="button"]:hover {
+button[type="submit"]:hover {
   background-color: #3071a9;
 }
 
-button[type="button"]:disabled {
+button[type="submit"]:disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
 
-button[type="button"]:not(:disabled) {
+button[type="submit"]:not(:disabled) {
   background-color: #428bca;
   cursor: pointer;
 }
 
-button[type="button"]:not(:disabled):hover {
+button[type="submit"]:not(:disabled):hover {
   background-color: #3071a9;
 }
 
@@ -89,7 +89,7 @@ button[type="button"]:not(:disabled):hover {
     margin-bottom: 10px;
   }
 
-  button[type="button"] {
+  button[type="submit"] {
     margin-top: 20px;
     font-size: 16px;
     padding: 8px;

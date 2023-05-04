@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Account Management</title>
+	<link rel="icon" type="image/x-icon" href="/image/favicon/favicon.ico" />
+	<link rel="stylesheet" type="text/css" href="/css/account/style.css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta charset="UTF-8" />
+	<meta name="description" content="Account management page for Typing Game." />
+	<meta name="keywords" content="account, management, password, change" />
+	<meta property="og:title" content="Account Management" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://typing-game.taroj1205.poyo.jp/account.html" />
+	<meta property="og:description" content="Account management page for Typing Game." />
+	<meta property="og:site_name" content="Typing Game" />
+	<!-- TODO <meta property="og:image" content="" /> -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<!-- TODO <meta name="twitter:image:src" content="" /> -->
+	<meta name="twitter:site" content="@taroj1205">
+	<meta name="twitter:creator" content="@taroj1205">
+	<meta name="subject" content="Account management page for Typing Game." />
+	<meta name="author" content="taroj1205" />
+	<meta name="designer" content="taroj1205" />
+</head>
+
+<body>
+	<div class="container">
+		<h1 class="title">Account Management</h1>
+		<form id="change-password-form">
+			<label for="username">Username:</label>
+			<input type="text" id="username" name="username" {{#if username}}value="{{username}}" {{/if}} required>
+			<label for="current-password">Current Password:</label>
+			<input type="password" id="current-password" name="current-password" required>
+			<label for="new-password">New Password:</label>
+			<input type="password" id="new-password" name="new-password" required>
+			<label for="confirm-password">Confirm Password:</label>
+			<input type="password" id="confirm-password" name="confirm-password" required>
+			<button type="submit" id="change-password-button" disabled>Change Password</button>
+		</form>
+	</div>
+	<script src="/script/account/dist/script.js"></script>
+</body>
+
+</html>
