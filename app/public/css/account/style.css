@@ -1,0 +1,97 @@
+body {
+  background-color: rgb(15, 15, 15);
+  font-family: Arial, sans-serif;
+  color: #ffffff;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 600px;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  text-align: center;
+  font-size: 36px;
+  margin-bottom: 20px;
+}
+
+form {
+  margin-top: 30px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 2px solid #cccccc;
+  border-radius: 5px;
+  font-size: 18px;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
+}
+
+button[type="button"] {
+  display: block;
+  margin: 30px auto 0;
+  padding: 10px;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  font-size: 18px;
+}
+
+button[type="button"]:hover {
+  background-color: #3071a9;
+}
+
+button[type="button"]:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+button[type="button"]:not(:disabled) {
+  background-color: #428bca;
+  cursor: pointer;
+}
+
+button[type="button"]:not(:disabled):hover {
+  background-color: #3071a9;
+}
+
+@media screen and (max-width: 600px) {
+  .container {
+    max-width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+
+  input[type="text"],
+  input[type="password"] {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  button[type="button"] {
+    margin-top: 20px;
+    font-size: 16px;
+    padding: 8px;
+  }
+}

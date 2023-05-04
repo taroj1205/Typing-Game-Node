@@ -315,6 +315,39 @@ app.post('/login', function (req, res) { return __awaiter(void 0, void 0, void 0
         }
     });
 }); });
+app.get('/account', function (req, res) {
+    res.sendFile(__dirname + '/public/html/account/password.html');
+});
+app.post('/change-password', function (req, res) {
+    var _a = req.body, username = _a.username, currentPassword = _a.currentPassword, newPassword = _a.newPassword;
+    db.get('SELECT * FROM users WHERE username = ?', [username], function (error, row) {
+        if (error || !row) {
+            console.error(error);
+            res.json({ success: false, error: 'User not found' });
+            return;
+        }
+        bcrypt.compare(currentPassword, row.password, function (err, result) {
+            if (err || !result) {
+                res.json({ success: false, error: 'Invalid current password' });
+                return;
+            }
+            bcrypt.hash(newPassword, 10, function (err, hash) {
+                if (err) {
+                    res.json({ success: false, error: 'Error hashing new password' });
+                    return;
+                }
+                db.run('UPDATE users SET password = ? WHERE username = ?', [hash, username], function (error) {
+                    if (error) {
+                        console.error(error);
+                        res.json({ success: false, error: 'Error updating password' });
+                        return;
+                    }
+                    res.json({ success: true });
+                });
+            });
+        });
+    });
+});
 /**
  * Finds a user in the database based on their username
  * @param {string} username - The username to search for

@@ -255,6 +255,39 @@ app.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         });
     }
 }));
+app.get('/account', (req, res) => {
+    res.sendFile(__dirname + '/public/html/account/password.html');
+});
+app.post('/change-password', (req, res) => {
+    const { username, currentPassword, newPassword } = req.body;
+    db.get('SELECT * FROM users WHERE username = ?', [username], (error, row) => {
+        if (error || !row) {
+            console.error(error);
+            res.json({ success: false, error: 'User not found' });
+            return;
+        }
+        bcrypt.compare(currentPassword, row.password, (err, result) => {
+            if (err || !result) {
+                res.json({ success: false, error: 'Invalid current password' });
+                return;
+            }
+            bcrypt.hash(newPassword, 10, (err, hash) => {
+                if (err) {
+                    res.json({ success: false, error: 'Error hashing new password' });
+                    return;
+                }
+                db.run('UPDATE users SET password = ? WHERE username = ?', [hash, username], (error) => {
+                    if (error) {
+                        console.error(error);
+                        res.json({ success: false, error: 'Error updating password' });
+                        return;
+                    }
+                    res.json({ success: true });
+                });
+            });
+        });
+    });
+});
 /**
  * Finds a user in the database based on their username
  * @param {string} username - The username to search for
