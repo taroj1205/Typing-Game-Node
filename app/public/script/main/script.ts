@@ -22,6 +22,7 @@ const setting_username: HTMLInputElement = document.getElementById("setting_user
 const logoutButton: HTMLButtonElement = document.getElementById("logout") as HTMLButtonElement;
 const loadingSection: HTMLElement = document.getElementById("loading") as HTMLElement;
 const loadingText: HTMLElement = loadingSection.querySelector('p') as HTMLElement;
+const accountLink = document.getElementById('account-link') as HTMLAnchorElement;
 
 let loadingInterval: NodeJS.Timer;
 
@@ -427,6 +428,9 @@ const getWords = async (username: string) => {
 	localStorage.setItem('quizlet', quizlet_id);
 	console.log(params);
 	setting_username.textContent = username;
+
+	accountLink.href = `/account?user=${username}`;
+	accountLink.target = '_blank';
 
 	const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 	const cachedDataString = localStorage.getItem("quizletData");
@@ -1073,10 +1077,12 @@ const sendPlaytime = (username: string) => {
 			playtime.reset();
 			playtime.start();
 			console.log(response);
+			return
 		} else {
 			console.error(xhr.statusText);
 			console.error('Request failed.');
 			playtime.start();
+			return
 		}
 	};
 	xhr.onerror = function () {

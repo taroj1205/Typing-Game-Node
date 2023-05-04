@@ -255,6 +255,54 @@ app.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         });
     }
 }));
+app.get('/account', (req, res) => {
+    // Read the HTML file
+    fs.readFile(__dirname + '/public/html/account/index.html', 'utf8', (err, data) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Internal server error');
+            return;
+        }
+        // Compile the Handlebars template
+        const template = handlebars.compile(data);
+        // Render the template with the username
+        const html = template({ username: req.query.user });
+        // Send the modified HTML file
+        res.send(html);
+    });
+});
+app.post('/change-password', (req, res) => {
+    const { username, currentPassword, newPassword } = req.body;
+    db.get('SELECT * FROM users WHERE username = ?', [username], (error, row) => {
+        if (error || !row) {
+            console.error(error);
+            res.json({ success: false, error: 'User not found' });
+            return;
+        }
+        bcrypt.compare(currentPassword, row.password, (err, result) => {
+            if (err || !result) {
+                setTimeout(() => {
+                    res.json({ success: false, error: 'Invalid current password' });
+                }, 5000); // Delay execution by 5 seconds (5000 milliseconds)
+                return;
+            }
+            bcrypt.hash(newPassword, 10, (err, hash) => {
+                if (err) {
+                    res.json({ success: false, error: 'Error hashing new password' });
+                    return;
+                }
+                db.run('UPDATE users SET password = ? WHERE username = ?', [hash, username], (error) => {
+                    if (error) {
+                        console.error(error);
+                        res.json({ success: false, error: 'Error updating password' });
+                        return;
+                    }
+                    res.json({ success: true });
+                });
+            });
+        });
+    });
+});
 /**
  * Finds a user in the database based on their username
  * @param {string} username - The username to search for
