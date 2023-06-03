@@ -1012,31 +1012,33 @@ type Card = {
  * @returns {Array<Object>} - an array of term objects
  */
 async function quizlet(id: Number) {
-	// Fetch the first page of terms
-	let res = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=1`).then(res => res.json())
+    // Fetch the first page of terms
+    let response = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=1`);
+    let res = await response.json();
 
-	// Initialize variables for pagination
-	let currentLength = 5;
-	let token = res.responses[0].paging.token;
-	let terms = res.responses[0].models.studiableItem;
-	let page = 2;
+    // Initialize variables for pagination
+    let currentLength = 5;
+    let token = res.responses[0].paging.token;
+    let terms = res.responses[0].models.studiableItem;
+    let page = 2;
 
-	// Keep fetching pages until we get less than 5 terms
-	while (currentLength >= 5) {
-		// Fetch the next page of terms
-		let res = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=${page++}&pagingToken=${token}`).then(res => res.json());
+    // Keep fetching pages until we get less than 5 terms
+    while (currentLength >= 5) {
+        // Fetch the next page of terms
+        response = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=${page++}&pagingToken=${token}`);
+        res = await response.json();
 
-		// Append the new terms to our array and update the pagination variables
-		terms.push(...res.responses[0].models.studiableItem);
-		currentLength = res.responses[0].models.studiableItem.length;
-		token = res.responses[0].paging.token;
-	}
+        // Append the new terms to our array and update the pagination variables
+        terms.push(...res.responses[0].models.studiableItem);
+        currentLength = res.responses[0].models.studiableItem.length;
+        token = res.responses[0].paging.token;
+    }
 
-	// Log a message indicating that we're fetching Quizlet data
-	await logMessage('Getting Quizlet data...', 'info');
+    // Log a message indicating that we're fetching Quizlet data
+    await logMessage('Getting Quizlet data...', 'info');
 
-	// Return the array of terms
-	return terms;
+    // Return the array of terms
+    return terms;
 }
 
 interface QuizletDetails {

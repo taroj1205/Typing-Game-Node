@@ -184,6 +184,10 @@ ruby {
   z-index: 10001;
 }
 
+#settings button {
+  font-family: "SourceCodePro-Regular", "Consolas", "Gothic UI", "Calibri", "Arial";
+}
+
 #settings h2 {
   text-align: center;
 }

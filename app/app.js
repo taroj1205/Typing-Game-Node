@@ -872,7 +872,8 @@ function sleep(ms) {
 function quizlet(id) {
     return __awaiter(this, void 0, void 0, function* () {
         // Fetch the first page of terms
-        let res = yield fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=1`).then(res => res.json());
+        let response = yield fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=1`);
+        let res = yield response.json();
         // Initialize variables for pagination
         let currentLength = 5;
         let token = res.responses[0].paging.token;
@@ -881,7 +882,8 @@ function quizlet(id) {
         // Keep fetching pages until we get less than 5 terms
         while (currentLength >= 5) {
             // Fetch the next page of terms
-            let res = yield fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=${page++}&pagingToken=${token}`).then(res => res.json());
+            response = yield fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=${page++}&pagingToken=${token}`);
+            res = yield response.json();
             // Append the new terms to our array and update the pagination variables
             terms.push(...res.responses[0].models.studiableItem);
             currentLength = res.responses[0].models.studiableItem.length;
