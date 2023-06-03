@@ -1017,7 +1017,7 @@ async function quizlet(id: Number) {
 
 	// Initialize variables for pagination
 	let currentLength = 5;
-	let token = res.responses[0].paging.token
+	let token = res.responses[0].paging.token;
 	let terms = res.responses[0].models.studiableItem;
 	let page = 2;
 
