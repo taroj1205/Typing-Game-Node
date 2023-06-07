@@ -431,35 +431,43 @@ app.get('/get/quizlet/data', async (req, res) => {
 
 		checkAndCreateDir();
 
-		const terms = await quizlet(Number(quizlet_id));
-		console.log("terms: z", terms);
+		await logMessage(`Getting Quizlet Data for ${quizlet_id}...`, "info");
+		let terms;
+		await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${quizlet_id}&filters%5BstudiableContainerType%5D=1&page=1`)
+			//.then(res => res.text())          // convert to plain text
+			//.then(text => console.log(text))
+			.then(res => res.json())
+			.then (async (data: any) => {
+				terms = data.responses[0].models.studiableItem;
 
-		let term: string[] = [];
-		let def: string[] = [];
-		for (let {
-			cardSides: [{
-				media: [{
-					plainText: termText
-				}]
-			}, {
-				media: [{
-					plainText: defText
-				}]
-			}]
-		} of terms) {
-			term.push(termText);
-			def.push(defText);
-			console.log(termText, defText);
-		}
+				console.log({ terms });
 
-		const {
-			quizlet_title,
-			termLang,
-			defLang
-		} = await getQuizletDetails(Number(quizlet_id));
+				let term: string[] = [];
+				let def: string[] = [];
+				for (let {
+					cardSides: [{
+						media: [{
+							plainText: termText
+						}]
+					}, {
+						media: [{
+							plainText: defText
+						}]
+					}]
+				} of terms) {
+					term.push(termText);
+					def.push(defText);
+					console.log(termText, defText);
+				}
 
-		db.serialize(() => {
-			db.run(`CREATE TABLE IF NOT EXISTS quizlet
+				const {
+					quizlet_title,
+					termLang,
+					defLang
+				} = await getQuizletDetails(Number(quizlet_id));
+
+				db.serialize(() => {
+					db.run(`CREATE TABLE IF NOT EXISTS quizlet
 					(
 						id                    INTEGER PRIMARY KEY AUTOINCREMENT,
 						quizlet_id            TEXT,
@@ -468,44 +476,45 @@ app.get('/get/quizlet/data', async (req, res) => {
 						quizlet_term_language TEXT,
 						UNIQUE (quizlet_id)
 					)`);
-			db.get('SELECT * FROM quizlet WHERE quizlet_id = ?', [quizlet_id], (err: any, row: any) => {
-				if (err) {
-					console.error(err.message);
-					res.status(500).send('Internal server error');
-				} else {
-					if (!row) {
-						db.run('INSERT INTO quizlet (quizlet_id, quizlet_title, quizlet_def_language, quizlet_term_language) VALUES (?, ?, ?, ?)', [quizlet_id, quizlet_title, defLang, termLang], (err: any) => {
-							if (err) {
-								console.error(err.message);
-								res.status(500).send('Internal server error');
+					db.get('SELECT * FROM quizlet WHERE quizlet_id = ?', [quizlet_id], (err: any, row: any) => {
+						if (err) {
+							console.error(err.message);
+							res.status(500).send('Internal server error');
+						} else {
+							if (!row) {
+								db.run('INSERT INTO quizlet (quizlet_id, quizlet_title, quizlet_def_language, quizlet_term_language) VALUES (?, ?, ?, ?)', [quizlet_id, quizlet_title, defLang, termLang], (err: any) => {
+									if (err) {
+										console.error(err.message);
+										res.status(500).send('Internal server error');
+									} else {
+										res.json({
+											term,
+											def,
+											quizlet_title,
+											quizlet_id
+										});
+									}
+								});
 							} else {
-								res.json({
-									term,
-									def,
-									quizlet_title,
-									quizlet_id
+								db.run('UPDATE quizlet SET quizlet_title = ?, quizlet_def_language = ?, quizlet_term_language = ? WHERE quizlet_id = ?', [quizlet_title, defLang, termLang, quizlet_id], (err: any) => {
+									if (err) {
+										console.error(err.message);
+										res.status(500).send('Internal server error');
+									} else {
+										res.json({
+											term,
+											def,
+											quizlet_title,
+											quizlet_id
+										});
+									}
 								});
 							}
-						});
-					} else {
-						db.run('UPDATE quizlet SET quizlet_title = ?, quizlet_def_language = ?, quizlet_term_language = ? WHERE quizlet_id = ?', [quizlet_title, defLang, termLang, quizlet_id], (err: any) => {
-							if (err) {
-								console.error(err.message);
-								res.status(500).send('Internal server error');
-							} else {
-								res.json({
-									term,
-									def,
-									quizlet_title,
-									quizlet_id
-								});
-							}
-						});
-					}
-				}
+						}
+					});
+				});
+				logMessage('Getting Quizlet Data...', 'info');
 			});
-		});
-		logMessage('Getting Quizlet Data...', 'info');
 	} catch (error: any) {
 		console.error(error);
 		let errorInfo: string = error;
@@ -1005,41 +1014,6 @@ type Card = {
 		}[];
 	}[];
 };
-
-/**
- * Fetches Quizlet terms for a given container ID
- * @param {number} id - the container ID to fetch terms for
- * @returns {Array<Object>} - an array of term objects
- */
-async function quizlet(id: Number) {
-    // Fetch the first page of terms
-    let response = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=1`);
-    let res = await response.json();
-
-    // Initialize variables for pagination
-    let currentLength = 5;
-    let token = res.responses[0].paging.token;
-    let terms = res.responses[0].models.studiableItem;
-    let page = 2;
-
-    // Keep fetching pages until we get less than 5 terms
-    while (currentLength >= 5) {
-        // Fetch the next page of terms
-        response = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&perPage=5&page=${page++}&pagingToken=${token}`);
-        res = await response.json();
-
-        // Append the new terms to our array and update the pagination variables
-        terms.push(...res.responses[0].models.studiableItem);
-        currentLength = res.responses[0].models.studiableItem.length;
-        token = res.responses[0].paging.token;
-    }
-
-    // Log a message indicating that we're fetching Quizlet data
-    await logMessage('Getting Quizlet data...', 'info');
-
-    // Return the array of terms
-    return terms;
-}
 
 interface QuizletDetails {
 	quizlet_title: string;
