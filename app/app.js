@@ -386,24 +386,18 @@ app.get('/get/quizlet/data', (req, res) => __awaiter(void 0, void 0, void 0, fun
         }
         checkAndCreateDir();
         yield logMessage(`Getting Quizlet Data for ${quizlet_id}...`, "info");
-        let terms;
-        yield fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${quizlet_id}&filters%5BstudiableContainerType%5D=1&page=1`)
-            //.then(res => res.text())          // convert to plain text
-            //.then(text => console.log(text))
-            .then(res => res.json())
-            .then((data) => __awaiter(void 0, void 0, void 0, function* () {
-            terms = data.responses[0].models.studiableItem;
-            console.log({ terms });
-            let term = [];
-            let def = [];
-            for (let { cardSides: [{ media: [{ plainText: termText }] }, { media: [{ plainText: defText }] }] } of terms) {
-                term.push(termText);
-                def.push(defText);
-                console.log(termText, defText);
-            }
-            const { quizlet_title, termLang, defLang } = yield getQuizletDetails(Number(quizlet_id));
-            db.serialize(() => {
-                db.run(`CREATE TABLE IF NOT EXISTS quizlet
+        let terms = yield quizlet(Number(quizlet_id));
+        console.log({ terms });
+        let term = [];
+        let def = [];
+        for (let { cardSides: [{ media: [{ plainText: termText }] }, { media: [{ plainText: defText }] }] } of terms) {
+            term.push(termText);
+            def.push(defText);
+            console.log(termText, defText);
+        }
+        const { quizlet_title, termLang, defLang } = yield getQuizletDetails(Number(quizlet_id));
+        db.serialize(() => {
+            db.run(`CREATE TABLE IF NOT EXISTS quizlet
 					(
 						id                    INTEGER PRIMARY KEY AUTOINCREMENT,
 						quizlet_id            TEXT,
@@ -412,49 +406,48 @@ app.get('/get/quizlet/data', (req, res) => __awaiter(void 0, void 0, void 0, fun
 						quizlet_term_language TEXT,
 						UNIQUE (quizlet_id)
 					)`);
-                db.get('SELECT * FROM quizlet WHERE quizlet_id = ?', [quizlet_id], (err, row) => {
-                    if (err) {
-                        console.error(err.message);
-                        res.status(500).send('Internal server error');
+            db.get('SELECT * FROM quizlet WHERE quizlet_id = ?', [quizlet_id], (err, row) => {
+                if (err) {
+                    console.error(err.message);
+                    res.status(500).send('Internal server error');
+                }
+                else {
+                    if (!row) {
+                        db.run('INSERT INTO quizlet (quizlet_id, quizlet_title, quizlet_def_language, quizlet_term_language) VALUES (?, ?, ?, ?)', [quizlet_id, quizlet_title, defLang, termLang], (err) => {
+                            if (err) {
+                                console.error(err.message);
+                                res.status(500).send('Internal server error');
+                            }
+                            else {
+                                res.json({
+                                    term,
+                                    def,
+                                    quizlet_title,
+                                    quizlet_id
+                                });
+                            }
+                        });
                     }
                     else {
-                        if (!row) {
-                            db.run('INSERT INTO quizlet (quizlet_id, quizlet_title, quizlet_def_language, quizlet_term_language) VALUES (?, ?, ?, ?)', [quizlet_id, quizlet_title, defLang, termLang], (err) => {
-                                if (err) {
-                                    console.error(err.message);
-                                    res.status(500).send('Internal server error');
-                                }
-                                else {
-                                    res.json({
-                                        term,
-                                        def,
-                                        quizlet_title,
-                                        quizlet_id
-                                    });
-                                }
-                            });
-                        }
-                        else {
-                            db.run('UPDATE quizlet SET quizlet_title = ?, quizlet_def_language = ?, quizlet_term_language = ? WHERE quizlet_id = ?', [quizlet_title, defLang, termLang, quizlet_id], (err) => {
-                                if (err) {
-                                    console.error(err.message);
-                                    res.status(500).send('Internal server error');
-                                }
-                                else {
-                                    res.json({
-                                        term,
-                                        def,
-                                        quizlet_title,
-                                        quizlet_id
-                                    });
-                                }
-                            });
-                        }
+                        db.run('UPDATE quizlet SET quizlet_title = ?, quizlet_def_language = ?, quizlet_term_language = ? WHERE quizlet_id = ?', [quizlet_title, defLang, termLang, quizlet_id], (err) => {
+                            if (err) {
+                                console.error(err.message);
+                                res.status(500).send('Internal server error');
+                            }
+                            else {
+                                res.json({
+                                    term,
+                                    def,
+                                    quizlet_title,
+                                    quizlet_id
+                                });
+                            }
+                        });
                     }
-                });
+                }
             });
-            logMessage('Getting Quizlet Data...', 'info');
-        }));
+        });
+        logMessage('Getting Quizlet Data...', 'info');
     }
     catch (error) {
         console.error(error);
@@ -463,6 +456,19 @@ app.get('/get/quizlet/data', (req, res) => __awaiter(void 0, void 0, void 0, fun
         return res.status(500).send('Error retrieving Quizlet data');
     }
 }));
+function quizlet(id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&page=1`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
+        const data = yield response.json();
+        const terms = data.responses[0].models.studiableItem;
+        return terms;
+    });
+}
 /**
  * Checks if the directory exists, creates it if it doesn't, and logs the action.
  */

@@ -432,13 +432,8 @@ app.get('/get/quizlet/data', async (req, res) => {
 		checkAndCreateDir();
 
 		await logMessage(`Getting Quizlet Data for ${quizlet_id}...`, "info");
-		let terms;
-		await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${quizlet_id}&filters%5BstudiableContainerType%5D=1&page=1`)
-			//.then(res => res.text())          // convert to plain text
-			//.then(text => console.log(text))
-			.then(res => res.json())
-			.then (async (data: any) => {
-				terms = data.responses[0].models.studiableItem;
+		
+				let terms = await quizlet(Number(quizlet_id));
 
 				console.log({ terms });
 
@@ -514,7 +509,6 @@ app.get('/get/quizlet/data', async (req, res) => {
 					});
 				});
 				logMessage('Getting Quizlet Data...', 'info');
-			});
 	} catch (error: any) {
 		console.error(error);
 		let errorInfo: string = error;
@@ -522,6 +516,18 @@ app.get('/get/quizlet/data', async (req, res) => {
 		return res.status(500).send('Error retrieving Quizlet data');
 	}
 });
+
+async function quizlet(id: Number) {
+    const response = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&page=1`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    });
+    const data = await response.json();
+    const terms = data.responses[0].models.studiableItem;
+    return terms;
+}
 
 /**
  * Checks if the directory exists, creates it if it doesn't, and logs the action.
