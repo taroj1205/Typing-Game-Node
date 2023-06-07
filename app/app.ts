@@ -518,12 +518,10 @@ app.get('/get/quizlet/data', async (req, res) => {
 });
 
 async function quizlet(id: Number) {
-    const response = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&page=1`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+    const response = await fetch(`https://quizlet.com/webapi/3.4/studiable-item-documents?filters%5BstudiableContainerId%5D=${id}&filters%5BstudiableContainerType%5D=1&page=1&perPage=2000`, {
+        method: 'GET'
     });
+	console.log(response);
     const data = await response.json();
     const terms = data.responses[0].models.studiableItem;
     return terms;
